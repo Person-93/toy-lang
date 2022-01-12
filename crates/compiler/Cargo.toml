@@ -1,0 +1,7 @@
+[package]
+name = "toy-lang-compiler"
+authors = ["person93 <person93.person93@gmail.com>"]
+version = "0.1.0-dev"
+edition = "2021"
+description = "A toy programming language to play around with"
+license = "MIT OR APACHE"
