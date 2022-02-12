@@ -1,0 +1,133 @@
+[keywords]
+kw_break = "break"
+kw_continue = "continue"
+kw_else = "else"
+kw_extern = "extern"
+kw_false = "false"
+kw_fn = "fn"
+kw_for = "for"
+kw_if = "if"
+kw_in = "in"
+kw_let = "let"
+kw_loop = "loop"
+kw_mut = "mut"
+kw_pub = "pub"
+kw_ref = "ref"
+kw_return = "return"
+kw_struct = "struct"
+kw_true = "true"
+kw_while = "while"
+
+
+[reserved]
+kw_abastract = "abstract"
+kw_async = "async"
+kw_await = "await"
+kw_as = "as"
+kw_become = "become"
+kw_box = "box"
+kw_const = "const"
+kw_do = "do"
+kw_dyn = "dyn"
+kw_enum = "enum"
+kw_final = "final"
+kw_impl = "impl"
+kw_macro = "macro"
+kw_match = "match"
+kw_mod = "mod"
+kw_move = "move"
+kw_override = "override"
+kw_self_type = "Self"
+kw_self_value = "self"
+kw_static = "static"
+kw_super = "super"
+kw_trait = "trait"
+kw_try = "try"
+kw_type = "type"
+kw_typeof = "typeof"
+kw_unsafe = "unsafe"
+kw_unsized = "unsized"
+kw_use = "use"
+kw_virtual = "virtual"
+kw_where = "where"
+kw_yield = "yield"
+
+
+[operators]
+# logical
+and = { symbol = "&&", precedence = 4 }
+or = { symbol = "||", precedence = 3 }
+
+# comparison
+equality = { symbol = "=", precedence = 6 }
+inequality = { symbol = "!=", precedence = 6 }
+less_than = { symbol = "<", precedence = 5 }
+less_than_equal = { symbol = "<=", precedence = 5 }
+greater_than = { symbol = ">", precedence = 5 }
+greater_than_equal = { symbol = ">=", precedence = 5 }
+
+#bitwise
+bit_and = { symbol = "&", precedence = 9 }
+bit_and_assign = { symbol = "&=", precedence = 1 }
+bit_or = { symbol = "|", precedence = 7 }
+bit_or_assign = { symbol = "|=", precedence = 1 }
+bit_xor = { symbol = "^", precedence = 8 }
+bit_xor_assign = { symbol = "^=", precedence = 1 }
+shift_left = { symbol = "<<", precedence = 10 }
+shift_left_assign = { symbol = "<<=", precedence = 1 }
+shift_right = { symbol = ">>", precedence = 10 }
+shift_right_assign = { symbol = ">>=", precedence = 1 }
+
+# arithmetic
+add = { symbol = "+", precedence = 11 }
+add_assign = { symbol = "+=", precedence = 1 }
+sub = { symbol = "-", precedence = 11 }
+sub_assign = { symbol = "-=", precedence = 1 }
+remainder = { symbol = "%", precedence = 12 }
+remainder_assign = { symbol = "%=", precedence = 1 }
+mult = { symbol = "*", precedence = 12 }
+mult_assign = { symbol = "*=", precedence = 1 }
+div = { symbol = "/", precedence = 12 }
+div_assign = { symbol = "/=", precedence = 1 }
+
+# misc
+kw_as = { symbol = "as", precedence = 13 }
+assign = { symbol = ":=", precedence = 1 }
+range = { symbol = "..", precedence = 2 }
+range_inclusive = { symbol = "..=", precedence = 2 }
+member_access = { symbol = ".", precedence = 14 }
+
+
+[prefix_operators]
+borrow = "&"
+borrow_mut = "&mut"
+deref = "*"
+not = "not"
+neg = "-"
+
+
+[postfix_operators]
+try = "?"
+
+
+[punctuation]
+colon = ":"
+comma = ","
+comment = "//"
+doc_comment = "///"
+doc_comment_inner = "//!"
+ignore = "_"
+never = "!"
+path = "::"
+returns = "->"
+semi = ";"
+
+
+[delimiters]
+bracket = { open = "[", close = "]" }
+angle_bracket = { open = "<", close = ">" }
+brace = { open = "<", close = ">" }
+macro = { open = "#[", close = "]" }
+macro_inner = { open = "#![", close = "]" }
+paren = { open = "(", close = ")" }
+generics = { open = "::<", close = ">" }
