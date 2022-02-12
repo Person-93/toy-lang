@@ -5,3 +5,6 @@ version = "0.1.0-dev"
 edition = "2021"
 description = "A toy programming language to play around with"
 license = "MIT OR APACHE"
+
+[dependencies]
+logos = "0.12.0"
