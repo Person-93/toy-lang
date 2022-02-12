@@ -1,1 +1,8 @@
 /.idea
+
+# build artifacts
+/target
+/codegen/target
+
+# generated files
+/crates/compiler/src/**/generated.rs
