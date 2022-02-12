@@ -1,0 +1,16 @@
+[package]
+name = "toy-lang-codegen"
+authors = ["person93 <person93.person93@gmail.com>"]
+version = "0.0.0"
+edition = "2021"
+description = "Internal crate used for codegen"
+license = "MIT OR APACHE"
+publish = false
+
+[dependencies]
+anyhow = "1.0.53"
+heck = "0.4.0"
+proc-macro2 = "1.0.36"
+quote = "1.0.15"
+serde = { version = "1.0.134", features = ["derive"] }
+toml = "0.5.8"
