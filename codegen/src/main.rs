@@ -77,6 +77,7 @@ impl Specs {
 
     quote! {
       #[derive(Clone, Debug, logos::Logos, Eq, PartialEq)]
+      #[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
       pub enum Token {
         #[regex(r"\s+", logos::skip)]
         #[error]

@@ -1,5 +1,7 @@
 pub use self::generated::Token;
 use logos::Lexer;
+#[cfg(test)]
+use serde::{Deserialize, Serialize};
 use std::num::ParseIntError;
 
 mod generated;
@@ -10,12 +12,15 @@ pub trait StaticToken {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(test, derive(Serialize, Deserialize))]
 pub struct StrLit(String);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(test, derive(Serialize, Deserialize))]
 pub struct BoolLit(bool);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(test, derive(Serialize, Deserialize))]
 pub struct NumLit {
   prefix: Option<NumLitPrefix>,
   val: i64,
@@ -24,12 +29,14 @@ pub struct NumLit {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(test, derive(Serialize, Deserialize))]
 enum NumLitPrefix {
   Binary,
   Hex,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(test, derive(Serialize, Deserialize))]
 enum NumLitType {
   Int,
   Unsigned,

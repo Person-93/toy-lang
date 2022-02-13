@@ -8,3 +8,7 @@ license = "MIT OR APACHE"
 
 [dependencies]
 logos = "0.12.0"
+
+[dev-dependencies]
+insta = { version = "1.12.0", features = ["glob", "redactions", "ron"] }
+serde = { version = "1.0.136", features = ["derive"] }
