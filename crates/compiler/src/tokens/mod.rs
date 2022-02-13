@@ -4,6 +4,7 @@ use logos::Lexer;
 use serde::{Deserialize, Serialize};
 use std::num::ParseIntError;
 
+mod fmt;
 mod generated;
 
 pub trait StaticToken {

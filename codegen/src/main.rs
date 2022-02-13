@@ -13,7 +13,7 @@ fn main() -> Result<()> {
 
   std::fs::write(
     make_path_name("tokens"),
-    specs.generate_tokens_enum().to_string(),
+    specs.generate_tokens_mod().to_string(),
   )?;
 
   std::fs::write(
@@ -57,6 +57,15 @@ impl Specs {
     }
   }
 
+  fn generate_tokens_mod(&self) -> TokenStream {
+    TokenStream::from_iter(
+      self
+        .generate_tokens_enum()
+        .into_iter()
+        .chain(self.generate_tokens_fmt().into_iter()),
+    )
+  }
+
   fn generate_tokens_enum(&self) -> TokenStream {
     let keywords = self.keywords.iter().map(|(name, keyword)| {
       let ident = format_ident!("{}", name.to_pascal_case());
@@ -91,6 +100,33 @@ impl Specs {
 
         #[regex(r#"(0(x|b))?\d+(\.\d+)((u|i|f)\d+)"#, super::num_lit)]
         NumLit(super::NumLit),
+      }
+    }
+  }
+
+  fn generate_tokens_fmt(&self) -> TokenStream {
+    let keywords = self.keywords.iter().map(|(name, kw)| {
+      let ident = format_ident!("{}", name.to_pascal_case());
+      quote! { Token::#ident => write!(f, #kw) }
+    });
+
+    let operators = self.operators.iter().map(|(name, operator)| {
+      let ident = format_ident!("{}", name.to_pascal_case());
+      let symbol = &operator.symbol;
+      quote! { Token::#ident => write!(f, #symbol) }
+    });
+
+    quote! {
+      impl std::fmt::Display for Token {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+          match self {
+            Token::Error => write!(f, "INVALID_TOKEN"),
+            Token::StrLit(lit) => std::fmt::Display::fmt(lit, f),
+            Token::NumLit(lit) => std::fmt::Display::fmt(lit, f),
+            #(#operators),*,
+            #(#keywords),*,
+          }
+        }
       }
     }
   }
