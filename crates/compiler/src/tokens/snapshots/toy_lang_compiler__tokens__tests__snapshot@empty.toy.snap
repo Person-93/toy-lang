@@ -1,0 +1,8 @@
+---
+source: crates/compiler/src/tokens/tests.rs
+assertion_line: 11
+expression: "(Token::lexer(&text).spanned().collect::<Vec<_>>())"
+input_file: toys/empty.toy
+
+---
+[]

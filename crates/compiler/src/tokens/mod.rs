@@ -6,6 +6,8 @@ use std::num::ParseIntError;
 
 mod fmt;
 mod generated;
+#[cfg(test)]
+mod tests;
 
 pub trait StaticToken {
   fn name() -> &'static str;
