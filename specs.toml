@@ -54,7 +54,7 @@ reserved = [
 
 [dynamic_tokens]
 ident = "[[:alpha:]_][[:alnum:]_]*"
-num_lit = '''(0(x|b))?\d+(\.\d+)((u|i|f)\d+)'''
+num_lit = '''(0(x|b))?\d+(\.\d+)?((u|i|f)\d+)?'''
 str_lit = '''"([^"]|(\\"))*"'''
 
 
