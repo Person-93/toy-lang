@@ -126,7 +126,7 @@ semi = ";"
 [delimiters]
 bracket = { open = "[", close = "]" }
 angle_bracket = { open = "<", close = ">" }
-brace = { open = "<", close = ">" }
+brace = { open = "{", close = "}" }
 macro = { open = "#[", close = "]" }
 macro_inner = { open = "#![", close = "]" }
 paren = { open = "(", close = ")" }
