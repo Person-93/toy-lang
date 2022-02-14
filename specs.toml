@@ -1,48 +1,219 @@
-overloaded = ["<", ">", "[", "]"]
+keywords = [
+    "kw_break",
+    "kw_continue",
+    "kw_else",
+    "kw_extern",
+    "kw_false",
+    "kw_fn",
+    "kw_for",
+    "kw_if",
+    "kw_in",
+    "kw_let",
+    "kw_loop",
+    "kw_mut",
+    "kw_pub",
+    "kw_ref",
+    "kw_return",
+    "kw_struct",
+    "kw_true",
+    "kw_while",
+]
+reserved = [
+    "kw_abstract",
+    "kw_async",
+    "kw_await",
+    "kw_as",
+    "kw_become",
+    "kw_box",
+    "kw_const",
+    "kw_do",
+    "kw_dyn",
+    "kw_enum",
+    "kw_final",
+    "kw_impl",
+    "kw_macro",
+    "kw_match",
+    "kw_mod",
+    "kw_move",
+    "kw_override",
+    "kw_self_type",
+    "kw_self_value",
+    "kw_static",
+    "kw_super",
+    "kw_trait",
+    "kw_try",
+    "kw_type",
+    "kw_typeof",
+    "kw_unsafe",
+    "kw_unsized",
+    "kw_use",
+    "kw_virtual",
+    "kw_where",
+    "kw_yield",
+]
 
-[keywords]
-kw_break = "break"
-kw_continue = "continue"
-kw_else = "else"
-kw_extern = "extern"
-kw_false = "false"
-kw_fn = "fn"
-kw_for = "for"
-kw_if = "if"
-kw_in = "in"
-kw_let = "let"
-kw_loop = "loop"
-kw_mut = "mut"
-kw_pub = "pub"
-kw_ref = "ref"
-kw_return = "return"
-kw_struct = "struct"
-kw_true = "true"
-kw_while = "while"
+[dynamic_tokens]
+ident = "[[:alpha:]_][[:alnum:]_]*"
+num_lit = '''(0(x|b))?\d+(\.\d+)((u|i|f)\d+)'''
+str_lit = '''"([^"]|(\\"))*"'''
 
 
-[reserved]
-kw_abastract = "abstract"
+[operators]
+# logical
+and = { symbol = "logical_and", precedence = 4 }
+or = { symbol = "logical_or", precedence = 3 }
+
+# comparison
+equality = { symbol = "equals", precedence = 6 }
+inequality = { symbol = "not_equals", precedence = 6 }
+less_than = { symbol = "less_than", precedence = 5 }
+less_than_equal = { symbol = "less_than_equal", precedence = 5 }
+greater_than = { symbol = "greater_than", precedence = 5 }
+greater_than_equal = { symbol = "greater_than_equal", precedence = 5 }
+
+#bitwise
+bit_and = { symbol = "ampersend", precedence = 9 }
+bit_and_assign = { symbol = "bit_and_assign", precedence = 1 }
+bit_or = { symbol = "bit_or", precedence = 7 }
+bit_or_assign = { symbol = "bit_or_assign", precedence = 1 }
+bit_xor = { symbol = "bit_xor", precedence = 8 }
+bit_xor_assign = { symbol = "bit_xor_assign", precedence = 1 }
+shift_left = { symbol = "shift_left", precedence = 10 }
+shift_left_assign = { symbol = "shift_left_assign", precedence = 1 }
+shift_right = { symbol = "shift_right", precedence = 10 }
+shift_right_assign = { symbol = "shift_right_assign", precedence = 1 }
+
+# arithmetic
+add = { symbol = "add", precedence = 11 }
+add_assign = { symbol = "add_assign", precedence = 1 }
+sub = { symbol = "dash", precedence = 11 }
+sub_assign = { symbol = "sub_assign", precedence = 1 }
+modulo = { symbol = "percent", precedence = 12 }
+modulo_assign = { symbol = "modulo_assign", precedence = 1 }
+mult = { symbol = "star", precedence = 12 }
+mult_assign = { symbol = "mult_assign", precedence = 1 }
+div = { symbol = "div", precedence = 12 }
+div_assign = { symbol = "div_assign", precedence = 1 }
+
+# misc
+kw_as = { symbol = "kw_as", precedence = 13 }
+assign = { symbol = "assign", precedence = 1 }
+range = { symbol = "range", precedence = 2 }
+range_inclusive = { symbol = "range_inclusive", precedence = 2 }
+member_access = { symbol = "dot", precedence = 14 }
+
+
+[prefix_operators]
+borrow = "ampersend"
+deref = "star"
+not = "kw_not"
+neg = "minus"
+
+
+[postfix_operators]
+try = "try"
+
+
+[delimiters]
+bracket = { open = "left_bracket", close = "right_bracket" }
+angle_bracket = { open = "less_than", close = "greater_than" }
+brace = { open = "left_brace", close = "}" }
+macro = { open = "macro_open", close = "right_bracket" }
+macro_inner = { open = "macro_inner_open", close = "right_bracket" }
+paren = { open = "left_paren", close = "right_paren" }
+generics = { open = "turbofish", close = "greater_than" }
+
+[static_tokens]
+add = "+"
+add_assign = "+="
+ampersend = "&"
+assign = ":="
+bit_and_assign = "&="
+bit_or = "|"
+bit_or_assign = "|="
+bit_xor = "^"
+bit_xor_assign = "^="
+colon = ":"
+comma = ","
+comment = "//"
+dash = "-"
+div = "/"
+div_assign = "/="
+doc_comment = "///"
+doc_comment_inner = "//!"
+dot = "."
+equals = "="
+greater_than = ">"
+greater_than_equal = ">="
+ignore = "_"
+left_brace = "{"
+left_bracket = "["
+left_paren = "("
+less_than = "<"
+less_than_equal = "<="
+macro_open = "#["
+macro_inner_open = "#!["
+modulo_assign = "%="
+mult_assign = "*="
+never = "!"
+path = "::"
+percent = "%"
+returns = "->"
+range = ".."
+range_inclusive = "..="
+right_bracket = "]"
+right_brace = "}"
+right_paren = ")"
+shift_right = ">>"
+shift_right_assign = ">>="
+shift_left = "<<"
+shift_left_assign = "<<="
+start = "*"
+sub_assign = "-="
+not_equals = "!="
+semi = ";"
+turbofish = "::<"
+try = "?"
+
+kw_abstract = "abstract"
 kw_async = "async"
 kw_await = "await"
 kw_as = "as"
 kw_become = "become"
 kw_box = "box"
+kw_break = "break"
 kw_const = "const"
+kw_continue = "continue"
 kw_do = "do"
 kw_dyn = "dyn"
+kw_else = "else"
 kw_enum = "enum"
+kw_extern = "extern"
+kw_false = "false"
 kw_final = "final"
+kw_fn = "fn"
+kw_for = "for"
+kw_if = "if"
 kw_impl = "impl"
+kw_in = "in"
+kw_let = "let"
+kw_loop = "loop"
 kw_macro = "macro"
 kw_match = "match"
 kw_mod = "mod"
 kw_move = "move"
 kw_override = "override"
+kw_mut = "mut"
+kw_not = "not"
+kw_pub = "pub"
+kw_ref = "ref"
+kw_return = "return"
 kw_self_type = "Self"
 kw_self_value = "self"
 kw_static = "static"
+kw_struct = "struct"
 kw_super = "super"
+kw_true = "true"
 kw_trait = "trait"
 kw_try = "try"
 kw_type = "type"
@@ -52,84 +223,5 @@ kw_unsized = "unsized"
 kw_use = "use"
 kw_virtual = "virtual"
 kw_where = "where"
+kw_while = "while"
 kw_yield = "yield"
-
-
-[operators]
-# logical
-and = { symbol = "&&", precedence = 4 }
-or = { symbol = "||", precedence = 3 }
-
-# comparison
-equality = { symbol = "=", precedence = 6 }
-inequality = { symbol = "!=", precedence = 6 }
-less_than = { symbol = "<", precedence = 5 }
-less_than_equal = { symbol = "<=", precedence = 5 }
-greater_than = { symbol = ">", precedence = 5 }
-greater_than_equal = { symbol = ">=", precedence = 5 }
-
-#bitwise
-bit_and = { symbol = "&", precedence = 9 }
-bit_and_assign = { symbol = "&=", precedence = 1 }
-bit_or = { symbol = "|", precedence = 7 }
-bit_or_assign = { symbol = "|=", precedence = 1 }
-bit_xor = { symbol = "^", precedence = 8 }
-bit_xor_assign = { symbol = "^=", precedence = 1 }
-shift_left = { symbol = "<<", precedence = 10 }
-shift_left_assign = { symbol = "<<=", precedence = 1 }
-shift_right = { symbol = ">>", precedence = 10 }
-shift_right_assign = { symbol = ">>=", precedence = 1 }
-
-# arithmetic
-add = { symbol = "+", precedence = 11 }
-add_assign = { symbol = "+=", precedence = 1 }
-sub = { symbol = "-", precedence = 11 }
-sub_assign = { symbol = "-=", precedence = 1 }
-remainder = { symbol = "%", precedence = 12 }
-remainder_assign = { symbol = "%=", precedence = 1 }
-mult = { symbol = "*", precedence = 12 }
-mult_assign = { symbol = "*=", precedence = 1 }
-div = { symbol = "/", precedence = 12 }
-div_assign = { symbol = "/=", precedence = 1 }
-
-# misc
-kw_as = { symbol = "as", precedence = 13 }
-assign = { symbol = ":=", precedence = 1 }
-range = { symbol = "..", precedence = 2 }
-range_inclusive = { symbol = "..=", precedence = 2 }
-member_access = { symbol = ".", precedence = 14 }
-
-
-[prefix_operators]
-borrow = "&"
-borrow_mut = "&mut"
-deref = "*"
-not = "not"
-neg = "-"
-
-
-[postfix_operators]
-try = "?"
-
-
-[punctuation]
-colon = ":"
-comma = ","
-comment = "//"
-doc_comment = "///"
-doc_comment_inner = "//!"
-ignore = "_"
-never = "!"
-path = "::"
-returns = "->"
-semi = ";"
-
-
-[delimiters]
-bracket = { open = "[", close = "]" }
-angle_bracket = { open = "<", close = ">" }
-brace = { open = "{", close = "}" }
-macro = { open = "#[", close = "]" }
-macro_inner = { open = "#![", close = "]" }
-paren = { open = "(", close = ")" }
-generics = { open = "::<", close = ">" }

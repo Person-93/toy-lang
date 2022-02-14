@@ -1,26 +1,29 @@
+use anyhow::{Context, Result};
 use heck::{ToPascalCase, ToShoutySnakeCase};
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use serde::Deserialize;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Deserialize)]
 pub struct Specs {
-  keywords: HashMap<String, String>,
-  reserved: HashMap<String, String>,
-  operators: HashMap<String, Operator>,
+  static_tokens: BTreeMap<String, String>,
+  dynamic_tokens: BTreeMap<String, String>,
+  keywords: BTreeSet<String>,
+  reserved: BTreeSet<String>,
   #[allow(dead_code)]
-  prefix_operators: HashMap<String, String>,
+  operators: BTreeMap<String, Operator>,
   #[allow(dead_code)]
-  postfix_operators: HashMap<String, String>,
+  prefix_operators: BTreeMap<String, String>,
   #[allow(dead_code)]
-  punctuation: HashMap<String, String>,
-  delimiters: HashMap<String, Delimiter>,
-  overloaded: HashSet<String>,
+  postfix_operators: BTreeMap<String, String>,
+  #[allow(dead_code)]
+  delimiters: BTreeMap<String, Delimiter>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Operator {
+  #[allow(dead_code)]
   symbol: String,
   #[allow(dead_code)]
   precedence: i8,
@@ -28,23 +31,40 @@ pub struct Operator {
 
 #[derive(Debug, Deserialize)]
 pub struct Delimiter {
+  #[allow(dead_code)]
   open: String,
+  #[allow(dead_code)]
   close: String,
 }
 
 impl Specs {
-  pub fn generate_keywords_mod(&self) -> TokenStream {
+  pub fn generate_keywords_mod(&self) -> Result<TokenStream> {
     let keywords = self
       .keywords
       .iter()
-      .map(|(name, keyword)| expand_keyword(name, keyword));
+      .map(|name| -> Result<TokenStream> {
+        Ok(expand_keyword(
+          name,
+          self.static_tokens.get(name).context("missing token")?,
+        ))
+      })
+      .collect::<Result<Vec<_>>>()?;
 
     let reserved = self
       .reserved
       .iter()
-      .map(|(name, keyword)| expand_keyword(name, keyword));
+      .map(|name| -> Result<TokenStream> {
+        Ok(expand_keyword(
+          name,
+          self
+            .static_tokens
+            .get(name)
+            .context("missing reserved keyword")?,
+        ))
+      })
+      .collect::<Result<Vec<_>>>()?;
 
-    quote! {
+    Ok(quote! {
       use super::super::tokens::StaticToken;
 
       #(#keywords)
@@ -56,99 +76,59 @@ impl Specs {
         #(#reserved)
         *
       }
-    }
+    })
   }
 
-  pub fn generate_tokens_mod(&self) -> TokenStream {
-    TokenStream::from_iter(
-      self
-        .generate_tokens_enum()
-        .into_iter()
-        .chain(self.generate_tokens_fmt().into_iter()),
-    )
+  pub fn generate_tokens_mod(&self) -> Result<TokenStream> {
+    let mut tokens = self.generate_tokens_enum();
+    tokens.extend(self.generate_tokens_fmt());
+    Ok(tokens)
   }
 
   fn generate_tokens_enum(&self) -> TokenStream {
-    let keywords = self.keywords.iter().map(|(name, keyword)| {
-      let ident = format_ident!("{}", name.to_pascal_case());
+    let dynamic_tokens = self.dynamic_tokens.iter().map(|(name, pattern)| {
+      let name = name.to_pascal_case();
+      let name = format_ident!("{name}");
+      quote! {
+        #[regex(#pattern, |lex| super::DynamicToken::new(lex))]
+        #name(super::#name)
+      }
+    });
+
+    let static_tokens = self.static_tokens.iter().map(|(name, keyword)| {
+      let name = name.to_pascal_case();
+      let name = format_ident!("{name}");
       quote! {
         #[token(#keyword)]
-        #ident
-      }
-    });
-
-    let operators = self.operators.iter().map(|(name, operator)| {
-      let symbol = &operator.symbol;
-      let ident = format_ident!("{}", name.to_pascal_case());
-      quote! {
-        #[token(#symbol)]
-        #ident
-      }
-    });
-
-    let delimiters = self.filter_delimiters().map(|(ident, symbol)| {
-      quote! {
-        #[token(#symbol)]
-        #ident
-      }
-    });
-
-    let punctuation = self.punctuation.iter().map(|(name, symbol)| {
-      let name = name.to_pascal_case();
-      let ident = format_ident!("{name}");
-
-      quote! {
-        #[token(#symbol)]
-        #ident
+        #name
       }
     });
 
     quote! {
       #[derive(Clone, Debug, logos::Logos, Eq, PartialEq)]
-      #[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
+      #[cfg_attr(test, derive(serde::Serialize))]
       pub enum Token {
         #[regex(r"\s+", logos::skip)]
         #[error]
         Error,
 
-        #[regex(r#""([^"]|(\\"))*""#, |lex| super::StrLit(lex.slice().to_owned()))]
-        StrLit(super::StrLit),
-
-        #[regex(r#"(0(x|b))?\d+(\.\d+)((u|i|f)\d+)"#, super::num_lit)]
-        NumLit(super::NumLit),
-
-        #[regex(r"[[:alpha:]_][[:alnum:]_]*", |lex| lex.slice().to_owned())]
-        Ident(String),
-
-        #(#keywords),*,
-        #(#operators),*,
-        #(#delimiters),*,
-        #(#punctuation),*,
+        #(#dynamic_tokens),*,
+        #(#static_tokens),*,
       }
     }
   }
 
   fn generate_tokens_fmt(&self) -> TokenStream {
-    let keywords = self.keywords.iter().map(|(name, kw)| {
-      let ident = format_ident!("{}", name.to_pascal_case());
-      quote! { Token::#ident => write!(f, #kw) }
-    });
-
-    let operators = self.operators.iter().map(|(name, operator)| {
-      let ident = format_ident!("{}", name.to_pascal_case());
-      let symbol = &operator.symbol;
-      quote! { Token::#ident => write!(f, #symbol) }
-    });
-
-    let delimiters = self
-      .filter_delimiters()
-      .map(|(ident, symbol)| quote! { Token::#ident => write!(f, "{}", #symbol) });
-
-    let punctuation = self.punctuation.iter().map(|(name, symbol)| {
+    let dynamic_tokens = self.dynamic_tokens.iter().map(|(name, _)| {
       let name = name.to_pascal_case();
-      let ident = format_ident!("{name}");
+      let name = format_ident!("{name}");
+      quote! { Token::#name(value) => std::fmt::Display::fmt(value, f) }
+    });
 
-      quote! { Token::#ident => write!(f, #symbol) }
+    let static_tokens = self.static_tokens.iter().map(|(name, symbol)| {
+      let name = name.to_pascal_case();
+      let name = format_ident!("{name}");
+      quote! { Token::#name => write!(f, "{}", #symbol) }
     });
 
     quote! {
@@ -157,37 +137,12 @@ impl Specs {
           #[allow(clippy::write_literal)]
           match self {
             Token::Error => write!(f, "INVALID_TOKEN"),
-            Token::StrLit(lit) => std::fmt::Display::fmt(lit, f),
-            Token::NumLit(lit) => std::fmt::Display::fmt(lit, f),
-            Token::Ident(id) => std::fmt::Display::fmt(id, f),
-            #(#operators),*,
-            #(#keywords),*,
-            #(#delimiters),*,
-            #(#punctuation),*,
+            #(#dynamic_tokens),*,
+            #(#static_tokens),*,
           }
         }
       }
     }
-  }
-
-  fn filter_delimiters(&self) -> impl Iterator<Item = (Ident, &str)> {
-    self
-      .delimiters
-      .iter()
-      .map(|(name, Delimiter { open, close })| {
-        [
-          (
-            format_ident!("{}Open", name.to_pascal_case()),
-            open.as_str(),
-          ),
-          (
-            format_ident!("{}Close", name.to_pascal_case()),
-            close.as_str(),
-          ),
-        ]
-      })
-      .flatten()
-      .filter(|(_, symbol)| !self.overloaded.contains(*symbol))
   }
 }
 
@@ -195,15 +150,19 @@ fn expand_keyword(name: &str, keyword: &str) -> TokenStream {
   let ident = format_ident!("{}", name.to_pascal_case());
   let name = name.to_shouty_snake_case();
   quote! {
+    #[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+    #[cfg_attr(test, derive(serde::Serialize))]
     pub struct #ident;
 
     impl StaticToken for #ident {
-      fn name() -> &'static str {
-        #name
-      }
+      fn name() -> &'static str { #name }
 
-      fn symbol() -> &'static str {
-        #keyword
+      fn symbol() -> &'static str { #keyword }
+    }
+
+    impl std::fmt::Display for #ident {
+      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, #keyword)
       }
     }
   }

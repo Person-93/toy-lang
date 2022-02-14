@@ -11,7 +11,7 @@ const RULES: &[Rule] = &[
   ("keywords", Specs::generate_keywords_mod),
 ];
 
-type Rule = (&'static str, fn(&Specs) -> TokenStream);
+type Rule = (&'static str, fn(&Specs) -> Result<TokenStream>);
 
 fn main() -> Result<()> {
   let specs = std::fs::read_to_string("specs.toml")?;
@@ -22,7 +22,7 @@ fn main() -> Result<()> {
       .join(name)
       .join("generated.rs");
 
-    std::fs::write(name, func(&specs).to_string())?;
+    std::fs::write(name, func(&specs)?.to_string())?;
   }
 
   Ok(())
