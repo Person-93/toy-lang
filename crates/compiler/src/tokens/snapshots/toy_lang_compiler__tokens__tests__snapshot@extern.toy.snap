@@ -1,0 +1,39 @@
+---
+source: crates/compiler/src/tokens/tests.rs
+assertion_line: 12
+expression: "Token::lexer(&text).spanned().map(|(token, span)|\n                                      Output(token, span.clone(),\n                                             &text[span]).to_string()).collect::<Vec<_>>().join(\"\\n\")"
+input_file: toys/extern.toy
+
+---
+KwExtern @ 0..6
+KwFn @ 7..9
+Ident @ 10..16: answer
+LeftParen @ 16..17
+RightParen @ 17..18
+Returns @ 19..21
+Ident @ 22..24: i8
+Colon @ 24..25
+LeftBrace @ 26..27
+NumLit @ 28..30: 42
+RightBrace @ 31..32
+KwExtern @ 34..40
+KwFn @ 41..43
+Ident @ 44..48: ping
+LeftParen @ 48..49
+RightParen @ 49..50
+Returns @ 51..53
+Ident @ 54..59: usize
+Colon @ 59..60
+LeftBrace @ 61..62
+Ident @ 63..67: ping
+LeftParen @ 67..68
+RightParen @ 68..69
+RightBrace @ 70..71
+KwExtern @ 73..79
+KwFn @ 80..82
+Ident @ 83..87: pong
+LeftParen @ 87..88
+RightParen @ 88..89
+Returns @ 90..92
+Ident @ 93..98: usize
+Semi @ 98..99
