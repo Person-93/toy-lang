@@ -14,7 +14,7 @@ const RULES: &[Rule] = &[
 type Rule = (&'static str, fn(&Specs) -> Result<TokenStream>);
 
 fn main() -> Result<()> {
-  let specs = std::fs::read_to_string("specs.toml")?;
+  let specs = std::fs::read_to_string("specs/specs.toml")?;
   let specs: specs::Specs = toml::de::from_str(&specs)?;
 
   for (name, func) in RULES {

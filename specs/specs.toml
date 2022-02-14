@@ -117,7 +117,7 @@ try = "try"
 [delimiters]
 bracket = { open = "left_bracket", close = "right_bracket" }
 angle_bracket = { open = "less_than", close = "greater_than" }
-brace = { open = "left_brace", close = "}" }
+brace = { open = "left_brace", close = "right_brace" }
 macro = { open = "macro_open", close = "right_bracket" }
 macro_inner = { open = "macro_inner_open", close = "right_bracket" }
 paren = { open = "left_paren", close = "right_paren" }
