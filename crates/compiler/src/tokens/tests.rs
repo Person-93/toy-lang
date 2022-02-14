@@ -22,9 +22,9 @@ fn snapshot() {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
       match &self.0 {
         Token::Error => write!(f, "INVALID @ {:?}: {}", self.1, self.2),
-        Token::StrLit(lit) => write!(f, "STR_LIT @ {:?}: {lit}", self.1),
-        Token::NumLit(lit) => write!(f, "NUM_LIT @ {:?}: {lit}", self.1),
-        Token::Ident(ident) => write!(f, "IDENT @ {:?}: {ident}", self.1),
+        Token::StrLit(lit) => write!(f, "StrLit @ {:?}: {lit}", self.1),
+        Token::NumLit(lit) => write!(f, "NumLit @ {:?}: {lit}", self.1),
+        Token::Ident(ident) => write!(f, "Ident @ {:?}: {ident}", self.1),
         _ => write!(f, "{:?} @ {:?}", self.0, self.1),
       }
     }
