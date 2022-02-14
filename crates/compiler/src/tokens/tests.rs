@@ -1,5 +1,5 @@
 use super::*;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Formatter;
 
 use insta::{assert_snapshot, glob};
 use logos::{Logos, Span};
@@ -20,10 +20,12 @@ fn snapshot() {
 
   impl std::fmt::Display for Output<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-      if let Token::Error = self.0 {
-        write!(f, "ERROR @ {:?}: \"{}\"", self.1, self.2)
-      } else {
-        write!(f, "{:?} @ {:?}", self.0, self.1)
+      match &self.0 {
+        Token::Error => write!(f, "INVALID @ {:?}: {}", self.1, self.2),
+        Token::StrLit(lit) => write!(f, "STR_LIT @ {:?}: {lit}", self.1),
+        Token::NumLit(lit) => write!(f, "NUM_LIT @ {:?}: {lit}", self.1),
+        Token::Ident(ident) => write!(f, "IDENT @ {:?}: {ident}", self.1),
+        _ => write!(f, "{:?} @ {:?}", self.0, self.1),
       }
     }
   }

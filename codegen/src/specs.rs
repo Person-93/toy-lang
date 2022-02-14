@@ -102,6 +102,9 @@ impl Specs {
         #[regex(r#"(0(x|b))?\d+(\.\d+)((u|i|f)\d+)"#, super::num_lit)]
         NumLit(super::NumLit),
 
+        #[regex(r"[[:alpha:]_][[:alnum:]_]*", |lex| lex.slice().to_owned())]
+        Ident(String),
+
         #(#keywords),*,
         #(#operators),*,
       }
@@ -127,6 +130,7 @@ impl Specs {
             Token::Error => write!(f, "INVALID_TOKEN"),
             Token::StrLit(lit) => std::fmt::Display::fmt(lit, f),
             Token::NumLit(lit) => std::fmt::Display::fmt(lit, f),
+            Token::Ident(id) => std::fmt::Display::fmt(id, f),
             #(#operators),*,
             #(#keywords),*,
           }
