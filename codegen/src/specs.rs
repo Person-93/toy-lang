@@ -93,6 +93,16 @@ impl Specs {
       }
     });
 
+    let punctuation = self.punctuation.iter().map(|(name, symbol)| {
+      let name = name.to_pascal_case();
+      let ident = format_ident!("{name}");
+
+      quote! {
+        #[token(#symbol)]
+        #ident
+      }
+    });
+
     quote! {
       #[derive(Clone, Debug, logos::Logos, Eq, PartialEq)]
       #[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
@@ -113,6 +123,7 @@ impl Specs {
         #(#keywords),*,
         #(#operators),*,
         #(#delimiters),*,
+        #(#punctuation),*,
       }
     }
   }
@@ -133,6 +144,13 @@ impl Specs {
       .filter_delimiters()
       .map(|(ident, symbol)| quote! { Token::#ident => write!(f, "{}", #symbol) });
 
+    let punctuation = self.punctuation.iter().map(|(name, symbol)| {
+      let name = name.to_pascal_case();
+      let ident = format_ident!("{name}");
+
+      quote! { Token::#ident => write!(f, #symbol) }
+    });
+
     quote! {
       impl std::fmt::Display for Token {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -145,6 +163,7 @@ impl Specs {
             #(#operators),*,
             #(#keywords),*,
             #(#delimiters),*,
+            #(#punctuation),*,
           }
         }
       }
