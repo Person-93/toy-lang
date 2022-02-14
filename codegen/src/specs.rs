@@ -1,8 +1,8 @@
 use heck::{ToPascalCase, ToShoutySnakeCase};
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Deserialize)]
 pub struct Specs {
@@ -15,8 +15,8 @@ pub struct Specs {
   postfix_operators: HashMap<String, String>,
   #[allow(dead_code)]
   punctuation: HashMap<String, String>,
-  #[allow(dead_code)]
   delimiters: HashMap<String, Delimiter>,
+  overloaded: HashSet<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -28,9 +28,7 @@ pub struct Operator {
 
 #[derive(Debug, Deserialize)]
 pub struct Delimiter {
-  #[allow(dead_code)]
   open: String,
-  #[allow(dead_code)]
   close: String,
 }
 
@@ -88,6 +86,13 @@ impl Specs {
       }
     });
 
+    let delimiters = self.filter_delimiters().map(|(ident, symbol)| {
+      quote! {
+        #[token(#symbol)]
+        #ident
+      }
+    });
+
     quote! {
       #[derive(Clone, Debug, logos::Logos, Eq, PartialEq)]
       #[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
@@ -107,6 +112,7 @@ impl Specs {
 
         #(#keywords),*,
         #(#operators),*,
+        #(#delimiters),*,
       }
     }
   }
@@ -123,9 +129,14 @@ impl Specs {
       quote! { Token::#ident => write!(f, #symbol) }
     });
 
+    let delimiters = self
+      .filter_delimiters()
+      .map(|(ident, symbol)| quote! { Token::#ident => write!(f, "{}", #symbol) });
+
     quote! {
       impl std::fmt::Display for Token {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+          #[allow(clippy::write_literal)]
           match self {
             Token::Error => write!(f, "INVALID_TOKEN"),
             Token::StrLit(lit) => std::fmt::Display::fmt(lit, f),
@@ -133,10 +144,31 @@ impl Specs {
             Token::Ident(id) => std::fmt::Display::fmt(id, f),
             #(#operators),*,
             #(#keywords),*,
+            #(#delimiters),*,
           }
         }
       }
     }
+  }
+
+  fn filter_delimiters(&self) -> impl Iterator<Item = (Ident, &str)> {
+    self
+      .delimiters
+      .iter()
+      .map(|(name, Delimiter { open, close })| {
+        [
+          (
+            format_ident!("{}Open", name.to_pascal_case()),
+            open.as_str(),
+          ),
+          (
+            format_ident!("{}Close", name.to_pascal_case()),
+            close.as_str(),
+          ),
+        ]
+      })
+      .flatten()
+      .filter(|(_, symbol)| !self.overloaded.contains(*symbol))
   }
 }
 

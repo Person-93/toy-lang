@@ -1,3 +1,5 @@
+overloaded = ["<", ">", "[", "]"]
+
 [keywords]
 kw_break = "break"
 kw_continue = "continue"
