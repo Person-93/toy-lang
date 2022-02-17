@@ -6,3 +6,4 @@
 
 # generated files
 /crates/compiler/src/**/generated.rs
+tmp.rs
