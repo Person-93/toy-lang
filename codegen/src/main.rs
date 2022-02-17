@@ -1,10 +1,11 @@
-mod specs;
-
 use anyhow::Result;
 
 use crate::specs::Specs;
 use proc_macro2::TokenStream;
 use std::path::Path;
+
+mod collections;
+mod specs;
 
 const RULES: &[Rule] = &[
   ("tokens", Specs::generate_tokens_mod),
