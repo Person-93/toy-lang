@@ -1,10 +1,17 @@
-use self::tokens::{DynamicToken, StaticToken, Token, TokenSet};
+use self::{
+  ast::Ast,
+  tokens::{DynamicToken, StaticToken, Token, TokenSet},
+};
 use anyhow::{Context, Result};
 use heck::{ToPascalCase, ToShoutySnakeCase};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use serde::Deserialize;
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+  collections::{BTreeMap, BTreeSet},
+  fs,
+};
+use type_utils::TypeUtils;
 
 mod tokens;
 
@@ -92,6 +99,14 @@ impl Specs<'_> {
     let mut tokens = self.generate_tokens_enum();
     tokens.extend(self.generate_tokens_fmt());
     Ok(tokens)
+  }
+
+  pub fn generate_ast_mod(&self) -> Result<TokenStream> {
+    let ast = fs::read_to_string("specs/toy.ast")?;
+    let ast = Ast::parse(&ast).context("failed to parse AST description")?;
+
+    println!("{ast:#?}");
+    todo!()
   }
 
   fn generate_tokens_enum(&self) -> TokenStream {

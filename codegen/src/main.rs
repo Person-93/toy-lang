@@ -16,6 +16,10 @@ fn main() -> Result<()> {
       name: "keywords",
       func: Specs::generate_keywords_mod,
     },
+    Rule {
+      name: "ast",
+      func: Specs::generate_ast_mod,
+    },
   ];
 
   let specs = std::fs::read_to_string("specs/specs.toml")?;
