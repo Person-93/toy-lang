@@ -1,3 +1,4 @@
+use self::tokens::{DynamicToken, StaticToken, Token, TokenSet};
 use anyhow::{Context, Result};
 use heck::{ToPascalCase, ToShoutySnakeCase};
 use proc_macro2::TokenStream;
@@ -5,10 +6,13 @@ use quote::{format_ident, quote};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
+mod tokens;
+
 #[derive(Debug, Deserialize)]
-pub struct Specs {
-  static_tokens: BTreeMap<String, String>,
-  dynamic_tokens: BTreeMap<String, String>,
+#[serde(bound(deserialize = "'de: 's"))]
+pub struct Specs<'s> {
+  static_tokens: TokenSet<'s, StaticToken<'s>>,
+  dynamic_tokens: TokenSet<'s, DynamicToken<'s>>,
   keywords: BTreeSet<String>,
   reserved: BTreeSet<String>,
   #[allow(dead_code)]
@@ -37,7 +41,7 @@ pub struct Delimiter {
   close: String,
 }
 
-impl Specs {
+impl Specs<'_> {
   pub fn generate_keywords_mod(&self) -> Result<TokenStream> {
     let keywords = self
       .keywords
@@ -45,7 +49,11 @@ impl Specs {
       .map(|name| -> Result<TokenStream> {
         Ok(expand_keyword(
           name,
-          self.static_tokens.get(name).context("missing token")?,
+          self
+            .static_tokens
+            .get(name)
+            .map(|t| t.symbol())
+            .context("missing token")?,
         ))
       })
       .collect::<Result<Vec<_>>>()?;
@@ -59,6 +67,7 @@ impl Specs {
           self
             .static_tokens
             .get(name)
+            .map(|t| t.symbol())
             .context("missing reserved keyword")?,
         ))
       })
@@ -86,18 +95,18 @@ impl Specs {
   }
 
   fn generate_tokens_enum(&self) -> TokenStream {
-    let dynamic_tokens = self.dynamic_tokens.iter().map(|(name, pattern)| {
-      let name = name.to_pascal_case();
-      let name = format_ident!("{name}");
+    let dynamic_tokens = self.dynamic_tokens.iter().map(|token| {
+      let name = format_ident!("{}", token.name());
+      let pattern = token.pattern();
       quote! {
         #[regex(#pattern, |lex| super::DynamicToken::new(lex))]
         #name(super::#name)
       }
     });
 
-    let static_tokens = self.static_tokens.iter().map(|(name, keyword)| {
-      let name = name.to_pascal_case();
-      let name = format_ident!("{name}");
+    let static_tokens = self.static_tokens.iter().map(|token| {
+      let name = format_ident!("{}", token.name().to_pascal_case());
+      let keyword = token.symbol();
       quote! {
         #[token(#keyword)]
         #name
@@ -119,15 +128,14 @@ impl Specs {
   }
 
   fn generate_tokens_fmt(&self) -> TokenStream {
-    let dynamic_tokens = self.dynamic_tokens.iter().map(|(name, _)| {
-      let name = name.to_pascal_case();
-      let name = format_ident!("{name}");
+    let dynamic_tokens = self.dynamic_tokens.iter().map(|token| {
+      let name = format_ident!("{}", token.name().to_pascal_case());
       quote! { Token::#name(value) => std::fmt::Display::fmt(value, f) }
     });
 
-    let static_tokens = self.static_tokens.iter().map(|(name, symbol)| {
-      let name = name.to_pascal_case();
-      let name = format_ident!("{name}");
+    let static_tokens = self.static_tokens.iter().map(|token| {
+      let name = format_ident!("{}", token.name().to_pascal_case());
+      let symbol = token.symbol();
       quote! { Token::#name => write!(f, "{}", #symbol) }
     });
 
