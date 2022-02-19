@@ -50,8 +50,10 @@ jobs:
         override: true
 
     - uses: Swatinem/rust-cache@v1.3.0
+
+    - uses: actions-rs/cargo@v1
       with:
-        working-directory: crates
+        command: codegen
 
     - uses: actions-rs/cargo@v1
       with:
@@ -61,7 +63,7 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: feature-matrix
-        args: --manifest-path=crates/Cargo.toml test
+        args: test
 
   docs:
     name: Docs
@@ -77,8 +79,10 @@ jobs:
         override: true
 
     - uses: Swatinem/rust-cache@v1.3.0
+
+    - uses: actions-rs/cargo@v1
       with:
-        working-directory: crates
+        command: codegen
 
     - name: Check Documentation
       env:
@@ -86,9 +90,7 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: doc
-        args: >-
-          --manifest-path=crates/Cargo.toml --no-deps
-          --document-private-items --workspace
+        args: --no-deps --document-private-items --workspace
 
   rustfmt:
     runs-on: ubuntu-latest
@@ -103,16 +105,15 @@ jobs:
         components: rustfmt
 
     - uses: Swatinem/rust-cache@v1.3.0
-      with:
-        working-directory: crates
 
     - name: Check Formatting
       uses: actions-rs/cargo@v1
       with:
         command: fmt
-        args: --manifest-path=crates/Cargo.toml --all -- --check
+        args: --all -- --check
 
   clippy:
+    needs: smoke
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -123,12 +124,16 @@ jobs:
         components: clippy
         override: true
 
+    - uses: Swatinem/rust-cache@v1.3.0
+
+    - uses: actions-rs/cargo@v1
+      with:
+        command: codegen
+
     - uses: actions-rs/clippy-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        args: >-
-          --manifest-path=crates/Cargo.toml --workspace --all-features
-          --all-targets -- -D warnings
+        args: --workspace --all-features --all-targets -- -D warnings
 
   smoke:
     name: Quick Check
@@ -143,27 +148,25 @@ jobs:
         override: true
 
     - uses: Swatinem/rust-cache@v1.3.0
+
+    - uses: actions-rs/cargo@v1
       with:
-        working-directory: crates
+        command: codegen
 
     - name: Default Features
       uses: actions-rs/cargo@v1
       with:
         command: check
-        args: --manifest-path=crates/Cargo.toml --workspace --all-targets
+        args: --workspace --all-targets
 
     - name: All Features
       uses: actions-rs/cargo@v1
       with:
         command: check
-        args: >-
-          --manifest-path=crates/Cargo.toml --workspace --all-targets
-          --all-features
+        args: --workspace --all-targets --all-features
 
     - name: No Default Features
       uses: actions-rs/cargo@v1
       with:
         command: check
-        args: >-
-          --manifest-path=crates/Cargo.toml --workspace --all-targets
-          --no-default-features
+        args: --workspace --all-targets --no-default-features
