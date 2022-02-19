@@ -1,7 +1,5 @@
-use self::{
-  ast::Ast,
-  tokens::{DynamicToken, StaticToken, Token, TokenSet},
-};
+use self::tokens::{DynamicToken, StaticToken, Token, TokenSet};
+use crate::collections::{NamedItem, NamedSet, Unnamed};
 use anyhow::{Context, Result};
 use heck::{ToPascalCase, ToShoutySnakeCase};
 use proc_macro2::TokenStream;
@@ -13,6 +11,7 @@ use std::{
 };
 use type_utils::TypeUtils;
 
+mod ast;
 mod tokens;
 
 #[derive(Debug, Deserialize)]
@@ -28,8 +27,7 @@ pub struct Specs<'s> {
   prefix_operators: BTreeMap<String, String>,
   #[allow(dead_code)]
   postfix_operators: BTreeMap<String, String>,
-  #[allow(dead_code)]
-  delimiters: BTreeMap<String, Delimiter>,
+  delimiters: NamedSet<'s, Delimiter<'s>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -40,12 +38,13 @@ pub struct Operator {
   precedence: i8,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Delimiter {
-  #[allow(dead_code)]
-  open: String,
-  #[allow(dead_code)]
-  close: String,
+#[derive(Debug, TypeUtils, Deserialize)]
+#[tu_derive(Deserialize)]
+#[omit(pub UnnamedDelimiter<'d> {name})]
+pub struct Delimiter<'d> {
+  name: &'d str,
+  open: &'d str,
+  close: &'d str,
 }
 
 impl Specs<'_> {
@@ -102,16 +101,12 @@ impl Specs<'_> {
   }
 
   pub fn generate_ast_mod(&self) -> Result<TokenStream> {
-    let ast = fs::read_to_string("specs/toy.ast")?;
-    let ast = Ast::parse(&ast).context("failed to parse AST description")?;
-
-    println!("{ast:#?}");
-    todo!()
+    ast::generate(&fs::read_to_string("specs/toy.ast")?, self)
   }
 
   fn generate_tokens_enum(&self) -> TokenStream {
     let dynamic_tokens = self.dynamic_tokens.iter().map(|token| {
-      let name = format_ident!("{}", token.name());
+      let name = format_ident!("{}", token.name().to_pascal_case());
       let pattern = token.pattern();
       quote! {
         #[regex(#pattern, |lex| super::DynamicToken::new(lex))]
@@ -187,6 +182,34 @@ fn expand_keyword(name: &str, keyword: &str) -> TokenStream {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, #keyword)
       }
+    }
+  }
+}
+
+impl<'d> NamedItem<'d> for Delimiter<'d> {
+  type Unnamed = UnnamedDelimiter<'d>;
+
+  fn name(&self) -> &'d str {
+    self.name
+  }
+
+  fn dummy(name: &'d str) -> Self {
+    Self {
+      name,
+      open: "",
+      close: "",
+    }
+  }
+}
+
+impl<'d> Unnamed<'d> for UnnamedDelimiter<'d> {
+  type Named = Delimiter<'d>;
+
+  fn add_name(self, name: &'d str) -> Self::Named {
+    Delimiter {
+      name,
+      open: self.open,
+      close: self.close,
     }
   }
 }

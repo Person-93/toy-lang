@@ -1,35 +1,25 @@
+use crate::Specs;
+use anyhow::{Context, Result};
+use proc_macro2::TokenStream;
 use serde::Deserialize;
-use std::{collections::BTreeMap, ops::Deref};
+use std::fmt::{self, Display, Formatter};
 
-mod parse;
+mod collapsed;
+mod lex;
+mod parsed;
+mod print;
+mod raw;
 
-// TODO Ast struct should be a set of entries instead of a map
-
-#[derive(Debug)]
-pub struct Ast<'a>(BTreeMap<Ident<'a>, NodeDef<'a>>);
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Entry<'a> {
-  node_type: Ident<'a>,
-  node_def: NodeDef<'a>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub enum NodeDef<'a> {
-  Simple(Ident<'a>),
-  Modified {
-    inner: Box<NodeDef<'a>>,
-    modifier: Modifier,
-  },
-  Delimiter {
-    delimiter: Ident<'a>,
-    inner: Box<NodeDef<'a>>,
-  },
-  Group(Vec<NodeDef<'a>>),
-  Choice {
-    first: Box<NodeDef<'a>>,
-    second: Box<NodeDef<'a>>,
-  },
+pub fn generate<'ast>(text: &'ast str, specs: &'ast Specs<'ast>) -> Result<TokenStream> {
+  Ok(
+    raw::Ast::parse(text)
+      .context("failed to lex AST description")?
+      .transform(specs)
+      .context("failed to parse AST description")?
+      .transform()
+      .context("failed to collapse AST description")?
+      .print(specs),
+  )
 }
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Deserialize)]
@@ -44,16 +34,14 @@ pub enum Modifier {
   Optional,
 }
 
-impl<'a> AsRef<<Ident<'a> as Deref>::Target> for Ident<'a> {
-  fn as_ref(&self) -> &str {
-    self.0
-  }
-}
-
-impl<'a> Deref for Ident<'a> {
-  type Target = str;
-
-  fn deref(&self) -> &Self::Target {
-    self.0
+impl Display for Modifier {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    match self {
+      Modifier::Repeat => write!(f, "*"),
+      Modifier::Csv => write!(f, ",*"),
+      Modifier::OnePlus => write!(f, "+"),
+      Modifier::CsvOnePlus => write!(f, ",+"),
+      Modifier::Optional => write!(f, "?"),
+    }
   }
 }
