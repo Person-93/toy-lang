@@ -30,7 +30,7 @@ generics = delim[generics]<type,*>
 annotated_ident = ident semi type
 
 expr = code_block | statement | ident
-code_block = delim[brace]<(statement* expr?)?>
+code_block = delim[brace]<statement* expr?>
 statement = expr semi
 
 # TODO a bunch of AST nodes are temporarily described as ident
