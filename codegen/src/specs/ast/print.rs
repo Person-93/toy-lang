@@ -76,7 +76,29 @@ impl Ast<'_> {
         let ident = format_ident!("{}", ident.to_pascal_case());
         Some(quote! { pub enum #ident { #(#variants),* } })
       }
-      NodeKind::Delimited(..) | NodeKind::Modified(..) => None,
+      NodeKind::Delimited(inner, _delimiter) => match &**inner {
+        NodeKind::Node(_) | NodeKind::StaticToken(_) | NodeKind::DynamicToken(_) => None,
+        NodeKind::Group(Group { members, kind }) => match kind {
+          GroupKind::Zero | GroupKind::One(_) => None,
+          GroupKind::Many(indices) => {
+            let members = indices
+              .iter()
+              .copied()
+              .map(|idx| &members[idx])
+              .filter_map(|node| {
+                self.print_as_type(&node.kind, Some(node.ident)).map(|ty| {
+                  let ident = node.ident;
+                  quote! { #ident: #ty }
+                })
+              });
+
+            let ident = ident.as_type();
+            Some(quote! { pub struct #ident { #(#members),* } })
+          }
+        },
+        NodeKind::Choice(_) | NodeKind::Delimited(_, _) | NodeKind::Modified(_, _) => None,
+      },
+      NodeKind::Modified(..) => None,
     });
 
     quote! {
