@@ -1,9 +1,10 @@
-use std::{collections::BTreeSet, marker::PhantomData};
+use indexmap::IndexSet;
+use std::marker::PhantomData;
 
 mod impls;
 
 #[derive(Debug, Clone)]
-pub struct NamedSet<'ni, T: NamedItem<'ni>>(BTreeSet<Wrapper<'ni, T>>);
+pub struct NamedSet<'ni, T: NamedItem<'ni>>(IndexSet<Wrapper<'ni, T>>);
 
 #[derive(Debug, Clone)]
 struct Wrapper<'ni, T: NamedItem<'ni>>(T, PhantomData<&'ni ()>);

@@ -1,17 +1,18 @@
+use indexmap::IndexSet;
 use serde::{
   de::{self, Error, MapAccess},
   Deserialize, Deserializer,
 };
-use std::cmp::Ordering;
-use std::collections::BTreeSet;
 use std::{
   any,
+  cmp::Ordering,
   fmt::{self, Formatter},
+  hash::{Hash, Hasher},
   marker::PhantomData,
 };
 
 #[derive(Debug)]
-pub struct TokenSet<'t, T: Token<'t>>(BTreeSet<Wrapper<'t, T>>);
+pub struct TokenSet<'t, T: Token<'t>>(IndexSet<Wrapper<'t, T>>);
 
 impl<'t, T: Token<'t>> Default for TokenSet<'t, T> {
   fn default() -> Self {
@@ -68,6 +69,12 @@ impl<'de: 't, 't, T: Token<'t>> Deserialize<'de> for TokenSet<'t, T> {
 
 #[derive(Copy, Clone, Debug)]
 struct Wrapper<'t, T: Token<'t>>(T, PhantomData<&'t ()>);
+
+impl<'t, T: Token<'t>> Hash for Wrapper<'t, T> {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.0.name().hash(state)
+  }
+}
 
 impl<'t, T: Token<'t>> Ord for Wrapper<'t, T> {
   fn cmp(&self, other: &Self) -> Ordering {

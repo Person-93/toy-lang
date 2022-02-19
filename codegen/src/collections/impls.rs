@@ -7,7 +7,9 @@ use std::{
   any,
   cmp::Ordering,
   fmt::{self, Formatter},
+  hash::{Hash, Hasher},
   marker::PhantomData,
+  ops::Index,
 };
 
 impl<'ni, T: NamedItem<'ni>> FromIterator<T> for NamedSet<'ni, T> {
@@ -34,6 +36,14 @@ impl<'ni, T: NamedItem<'ni>> FromIterator<(&'ni str, T::Unnamed)> for NamedSet<'
 impl<'ni, T: NamedItem<'ni>> Default for NamedSet<'ni, T> {
   fn default() -> Self {
     NamedSet(Default::default())
+  }
+}
+
+impl<'ni, T: NamedItem<'ni>> Index<usize> for NamedSet<'ni, T> {
+  type Output = T;
+
+  fn index(&self, index: usize) -> &Self::Output {
+    &self.0[index].0
   }
 }
 
@@ -80,6 +90,12 @@ where
         Ok(named_set)
       }
     }
+  }
+}
+
+impl<'ni, T: NamedItem<'ni>> Hash for Wrapper<'ni, T> {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.0.name().hash(state)
   }
 }
 
