@@ -10,6 +10,27 @@ use std::{
   marker::PhantomData,
 };
 
+impl<'ni, T: NamedItem<'ni>> FromIterator<T> for NamedSet<'ni, T> {
+  fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+    NamedSet(
+      iter
+        .into_iter()
+        .map(|item| Wrapper(item, PhantomData))
+        .collect(),
+    )
+  }
+}
+
+impl<'ni, T: NamedItem<'ni>> FromIterator<(&'ni str, T::Unnamed)> for NamedSet<'ni, T> {
+  fn from_iter<I: IntoIterator<Item = (&'ni str, T::Unnamed)>>(iter: I) -> Self {
+    NamedSet::from_iter(
+      iter
+        .into_iter()
+        .map(|(name, unnamed)| unnamed.add_name(name)),
+    )
+  }
+}
+
 impl<'ni, T: NamedItem<'ni>> Default for NamedSet<'ni, T> {
   fn default() -> Self {
     NamedSet(Default::default())
