@@ -194,7 +194,7 @@ impl Ast<'_> {
       }
       Modifier::Optional => match self.print_as_type(kind, None) {
         Some(ty) => quote! { Option<#ty> },
-        None => todo!(),
+        None => quote! { bool },
       },
     }
   }
