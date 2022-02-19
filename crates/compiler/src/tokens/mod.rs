@@ -24,19 +24,19 @@ pub trait DynamicToken: TokenBase {
   fn new(lex: &mut Lexer<Token>) -> Result<Self, Self::Error>;
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(test, derive(Serialize))]
 pub struct Ident(String);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(test, derive(Serialize))]
 pub struct StrLit(String);
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(test, derive(Serialize))]
 pub struct BoolLit(bool);
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(test, derive(Serialize))]
 pub struct NumLit {
   prefix: Option<NumLitPrefix>,
@@ -45,14 +45,14 @@ pub struct NumLit {
   ty: Option<NumLitType>,
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(test, derive(Serialize))]
 enum NumLitPrefix {
   Binary,
   Hex,
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(test, derive(Serialize))]
 enum NumLitType {
   Int,

@@ -24,7 +24,7 @@ impl Ast<'_> {
             .filter_map(|node| {
               self.print_as_type(&node.kind, Some(node.ident)).map(|ty| {
                 let ident = node.ident;
-                quote! { #ident: #ty }
+                quote! { pub #ident: #ty }
               })
             });
 

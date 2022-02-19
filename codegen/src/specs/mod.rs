@@ -124,7 +124,7 @@ impl Specs<'_> {
     });
 
     quote! {
-      #[derive(Clone, Debug, logos::Logos, Eq, PartialEq)]
+      #[derive(Clone, Debug, logos::Logos, Eq, PartialEq, Hash)]
       #[cfg_attr(test, derive(serde::Serialize))]
       pub enum Token {
         #[regex(r"\s+", logos::skip)]
