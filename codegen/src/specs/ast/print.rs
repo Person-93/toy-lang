@@ -36,7 +36,14 @@ impl Ast<'_> {
         let variants = choices.iter().map(|choice| {
           let ty = choice.ident.as_type();
           let body = match &choice.kind {
-            NodeKind::Node(_) | NodeKind::StaticToken(_) => quote! {},
+            NodeKind::Node(child) => {
+              let child = self.get(child.0).unwrap();
+              match self.print_as_type(&child.kind, Some(child.ident)) {
+                Some(ty) => quote! { (#ty) },
+                None => quote! {},
+              }
+            }
+            NodeKind::StaticToken(_) => quote! {},
             NodeKind::DynamicToken(ident) => {
               let ty = ident.as_type();
               quote! { (tokens::#ty) }
