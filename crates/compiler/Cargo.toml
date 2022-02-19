@@ -7,6 +7,7 @@ description = "A toy programming language to play around with"
 license = "MIT OR APACHE"
 
 [dependencies]
+chumsky = "0.8.0"
 logos = "0.12.0"
 
 [dev-dependencies]
