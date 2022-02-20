@@ -32,6 +32,7 @@ pub enum Modifier {
   OnePlus,
   CsvOnePlus,
   Optional,
+  Boxed,
 }
 
 impl Display for Modifier {
@@ -42,6 +43,7 @@ impl Display for Modifier {
       Modifier::OnePlus => write!(f, "+"),
       Modifier::CsvOnePlus => write!(f, ",+"),
       Modifier::Optional => write!(f, "?"),
+      Modifier::Boxed => write!(f, "~"),
     }
   }
 }

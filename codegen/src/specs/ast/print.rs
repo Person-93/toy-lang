@@ -196,6 +196,10 @@ impl Ast<'_> {
         Some(ty) => quote! { Option<#ty> },
         None => quote! { bool },
       },
+      Modifier::Boxed => match self.print_as_type(kind, hint) {
+        Some(ty) => quote! { Box<#ty> },
+        None => quote! { compile_error!("empty box") },
+      },
     }
   }
 }

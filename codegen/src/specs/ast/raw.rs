@@ -208,6 +208,8 @@ impl Modifier {
       Some(Modifier::CsvOnePlus)
     } else if lexer.parse_literal("?") {
       Some(Modifier::Optional)
+    } else if lexer.parse_literal("~") {
+      Some(Modifier::Boxed)
     } else {
       None
     }
@@ -251,7 +253,7 @@ impl<'a> Deref for Ident<'a> {
   }
 }
 
-const IDENT_TERMINALS: &[char] = &[' ', ',', '+', '*', '?', ')', ']', '>'];
+const IDENT_TERMINALS: &[char] = &[' ', ',', '+', '*', '?', ')', ']', '>', '~'];
 
 struct LineRanges<'a> {
   text: &'a str,
