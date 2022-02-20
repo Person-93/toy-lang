@@ -2,12 +2,13 @@ use super::{
   super::parsed::{Ast as ParsedAst, NodeKind as ParsedNodeKind},
   Ast, Choice, Group, GroupKind, Ident, Node, NodeKind,
 };
-use std::fmt::Display;
+use crate::collections::NamedSet;
+use std::{collections::HashSet, fmt::Display};
 use thiserror::Error;
 
 impl<'a> ParsedAst<'a> {
   pub fn transform(&'a self) -> Result<Ast<'a>, Error> {
-    Ok(Ast(
+    let nodes = Nodes(
       self
         .iter()
         .map(|node| {
@@ -16,8 +17,24 @@ impl<'a> ParsedAst<'a> {
             .and_then(|node| Ok(Node::try_from(node)?))
             .map_err(|err| err.context(format!("failed to parse node: {node}")))
         })
-        .collect::<Result<_, _>>()?,
-    ))
+        .collect::<Result<NamedSet<_>, _>>()?,
+    );
+
+    let ast = nodes.handle_cycles();
+
+    println!(
+      "cyclic nodes: {}",
+      ast
+        .cyclic
+        .iter()
+        .copied()
+        .enumerate()
+        .filter_map(|(idx, cycle)| cycle.then(|| ast.nodes[idx].ident.to_string()))
+        .collect::<Vec<_>>()
+        .join(", ")
+    );
+
+    Ok(ast)
   }
 
   fn transform_node_kind(
@@ -156,6 +173,64 @@ impl<'a> ParsedAst<'a> {
     self
       .transform_node_kind(inner, hint)
       .map(|(inner, hint)| (NodeKind::Delimited(Box::new(inner), delimiter), hint))
+  }
+}
+
+struct Nodes<'n>(NamedSet<'n, Node<'n>>);
+
+impl<'n> Nodes<'n> {
+  fn handle_cycles(self) -> Ast<'n> {
+    let cyclic = self
+      .0
+      .iter()
+      .map(|node| self.is_node_cyclic(node))
+      .collect::<Vec<_>>();
+    Ast {
+      nodes: self.0,
+      cyclic,
+    }
+  }
+
+  #[must_use]
+  fn is_node_cyclic(&self, node: &Node<'_>) -> bool {
+    self.traverse_node(node.ident, &node.kind, &mut Default::default())
+  }
+
+  #[must_use]
+  fn traverse_node(
+    &self,
+    ident: Ident<'n>,
+    kind: &NodeKind<'n>,
+    visited: &mut HashSet<Ident<'n>>,
+  ) -> bool {
+    let mut delegate_to_child = |child: &Node<'n>| {
+      ident == child.ident
+        || (visited.insert(child.ident) && self.traverse_node(ident, &child.kind, visited))
+    };
+    match kind {
+      NodeKind::Node(child) => {
+        if ident == *child {
+          true
+        } else {
+          let node = self.0.get(child.0).unwrap();
+          visited.insert(node.ident);
+          self.traverse_node(ident, &node.kind, visited)
+        }
+      }
+      NodeKind::StaticToken(_) => false,
+      NodeKind::DynamicToken(_) => false,
+      NodeKind::Group(Group {
+        members: nodes,
+        kind: _,
+      }) => nodes.iter().any(delegate_to_child),
+      NodeKind::Choice(Choice::Option {
+        primary,
+        secondary: _,
+      }) => delegate_to_child(primary),
+      NodeKind::Choice(Choice::Regular(choices)) => choices.iter().any(delegate_to_child),
+      NodeKind::Delimited(inner, _) => self.traverse_node(ident, inner, visited),
+      NodeKind::Modified(inner, _) => self.traverse_node(ident, inner, visited),
+    }
   }
 }
 

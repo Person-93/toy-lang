@@ -1,12 +1,17 @@
 use super::{Ident, Modifier};
 use crate::collections::{NamedItem, NamedSet, Unnamed};
-use std::fmt::{self, Display, Formatter};
-use std::ops::Deref;
+use std::{
+  fmt::{self, Display, Formatter},
+  ops::Deref,
+};
 
 mod transform;
 
 #[derive(Debug, Clone)]
-pub struct Ast<'a>(NamedSet<'a, Node<'a>>);
+pub struct Ast<'a> {
+  nodes: NamedSet<'a, Node<'a>>,
+  cyclic: Vec<bool>,
+}
 
 #[derive(Debug, Clone)]
 pub struct Node<'a> {
@@ -51,7 +56,7 @@ impl<'a> Deref for Ast<'a> {
   type Target = NamedSet<'a, Node<'a>>;
 
   fn deref(&self) -> &Self::Target {
-    &self.0
+    &self.nodes
   }
 }
 
