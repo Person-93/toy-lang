@@ -9,8 +9,8 @@ mod transform;
 
 #[derive(Debug, Clone)]
 pub struct Ast<'a> {
-  nodes: NamedSet<'a, Node<'a>>,
-  cyclic: Vec<bool>,
+  pub nodes: NamedSet<'a, Node<'a>>,
+  pub cyclic: Vec<bool>,
 }
 
 #[derive(Debug, Clone)]
