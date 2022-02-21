@@ -1,6 +1,7 @@
 entry ::= <node_type> <whitespace> "=" <whitespace> <node_def>
 node_type ::= <identifier>
 node_def ::= <identifier> |
+             "!todo" |
              <identifier><modifier> |
              (<node_def>) |
              "delim[" <identifier> "]<" <node_def> ">" |

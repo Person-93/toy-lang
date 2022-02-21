@@ -69,6 +69,7 @@ impl Ast<'_> {
               let ty = self.print_modified_type(&**inner, None, *modifier);
               quote! { (#ty) }
             }
+            NodeKind::Todo => quote! {},
           };
           quote! { #ty #body }
         });
@@ -96,9 +97,13 @@ impl Ast<'_> {
             Some(quote! { pub struct #ident { #(#members),* } })
           }
         },
-        NodeKind::Choice(_) | NodeKind::Delimited(_, _) | NodeKind::Modified(_, _) => None,
+        NodeKind::Choice(_)
+        | NodeKind::Delimited(_, _)
+        | NodeKind::Modified(_, _)
+        | NodeKind::Todo => None,
       },
       NodeKind::Modified(..) => None,
+      NodeKind::Todo => None,
     });
 
     quote! {
@@ -159,10 +164,7 @@ impl Ast<'_> {
               .print_as_type(&child.kind, hint)
               .unwrap_or_else(|| child.ident.as_type().to_token_stream())
           }
-          NodeKind::StaticToken(_) => {
-            let ident = proc_macro2::Ident::new("usize", proc_macro2::Span::call_site());
-            quote! { #ident }
-          }
+          NodeKind::StaticToken(_) => quote! { usize },
           NodeKind::DynamicToken(ident) => ident.as_type().to_token_stream(),
           NodeKind::Group(Group { members, kind }) => match kind {
             GroupKind::Zero | GroupKind::Many(_) => unreachable!(),
@@ -189,6 +191,7 @@ impl Ast<'_> {
             None => todo!(),
           },
           NodeKind::Modified(_, _) => unreachable!(),
+          NodeKind::Todo => quote! { () },
         };
         quote! { Vec<#ty> }
       }

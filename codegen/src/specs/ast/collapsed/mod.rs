@@ -28,6 +28,7 @@ pub enum NodeKind<'n> {
   Choice(Choice<'n>),
   Delimited(Box<NodeKind<'n>>, Ident<'n>),
   Modified(Box<NodeKind<'n>>, Modifier),
+  Todo,
 }
 
 #[derive(Clone, Debug)]
@@ -105,6 +106,7 @@ impl Display for NodeKind<'_> {
             | NodeKind::DynamicToken(_)
             | NodeKind::Delimited(..)
             | NodeKind::Modified(..) => child.ident.to_string(),
+            NodeKind::Todo => String::from("!todo"),
           })
           .collect::<Vec<_>>()
           .join(" ")
@@ -122,6 +124,7 @@ impl Display for NodeKind<'_> {
               | NodeKind::DynamicToken(_)
               | NodeKind::Delimited(..)
               | NodeKind::Modified(..) => child.ident.to_string(),
+              NodeKind::Todo => String::from("!todo"),
             })
             .collect::<Vec<_>>()
             .join(" | ")
@@ -138,7 +141,9 @@ impl Display for NodeKind<'_> {
         | NodeKind::DynamicToken(_)
         | NodeKind::Delimited(..) => write!(f, "{inner}{modifier}"),
         NodeKind::Modified(..) => unreachable!(),
+        NodeKind::Todo => write!(f, "!todo"),
       },
+      NodeKind::Todo => write!(f, "!todo"),
     }
   }
 }

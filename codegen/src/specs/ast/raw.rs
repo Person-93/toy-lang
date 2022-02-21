@@ -23,6 +23,7 @@ pub enum NodeDef<'a> {
   Delimiter(Box<NodeDef<'a>>, Ident<'a>),
   Group(Vec<NodeDef<'a>>),
   Choice(Box<NodeDef<'a>>, Box<NodeDef<'a>>),
+  Todo,
 }
 
 impl<'a> DerefMut for Ast<'a> {
@@ -168,6 +169,8 @@ impl NodeDef<'_> {
         }
 
         NodeDef::Delimiter(Box::new(node_def), ident)
+      } else if lexer.parse_literal("!todo") {
+        NodeDef::Todo
       } else {
         NodeDef::Simple(Ident::parse(lexer)?)
       };

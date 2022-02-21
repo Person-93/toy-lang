@@ -44,6 +44,7 @@ fn node_from_def(node_def: ValidNodeDef) -> NodeKind {
     ValidNodeDef::Delimited(inner, delimiter) => {
       NodeKind::Delimited(Box::new(node_from_def(*inner)), delimiter)
     }
+    ValidNodeDef::Todo => NodeKind::Todo,
   }
 }
 
@@ -103,6 +104,7 @@ impl<'v, 'ast: 'v> Validator<'v, 'ast> {
         NodeDef::Choice(first, second) => {
           ValidNodeDef::Choice(self.validate_choices(first, second, Vec::with_capacity(1))?)
         }
+        NodeDef::Todo => ValidNodeDef::Todo,
       };
       self.cache.borrow_mut().insert(node_def, valid_node.clone());
       valid_node
@@ -135,6 +137,7 @@ enum ValidNodeDef<'a> {
   Group(Vec<ValidNodeDef<'a>>),
   Choice(Vec<ValidNodeDef<'a>>),
   Delimited(Box<ValidNodeDef<'a>>, Ident<'a>),
+  Todo,
 }
 
 #[derive(Clone, Debug, Error)]

@@ -57,6 +57,7 @@ impl<'a> ParsedAst<'a> {
       ParsedNodeKind::Modified(inner, modifier) => self
         .transform_node_kind(inner, hint)
         .map(|(inner, hint)| (NodeKind::Modified(Box::new(inner), *modifier), hint)),
+      ParsedNodeKind::Todo => Ok((NodeKind::Todo, hint)),
     }
   }
 
@@ -95,6 +96,7 @@ impl<'a> ParsedAst<'a> {
               GroupKind::Many(..) => Some(idx),
             },
             NodeKind::Delimited(inner, _) | NodeKind::Modified(inner, _) => get_index(inner, idx),
+            NodeKind::Todo => None,
           }
         }
       })
@@ -230,6 +232,7 @@ impl<'n> Nodes<'n> {
       NodeKind::Choice(Choice::Regular(choices)) => choices.iter().any(delegate_to_child),
       NodeKind::Delimited(inner, _) => self.traverse_node(ident, inner, visited),
       NodeKind::Modified(inner, _) => self.traverse_node(ident, inner, visited),
+      NodeKind::Todo => false,
     }
   }
 }
@@ -284,6 +287,7 @@ impl<'n> TryFrom<(NodeKind<'n>, Option<Ident<'n>>)> for Node<'n> {
           ident: node.ident,
           kind: NodeKind::Modified(Box::new(node.kind), modifier),
         }),
+        NodeKind::Todo => Node::try_from((NodeKind::Todo, Some(hint.unwrap_or(Ident("todo"))))),
       },
     }
   }
