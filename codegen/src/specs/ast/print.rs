@@ -1,5 +1,5 @@
 use super::{
-  super::Specs,
+  super::{is_rust_keyword, Specs},
   collapsed::{Ast, Choice, Group, GroupKind, Node, NodeKind},
   Ident, Modifier,
 };
@@ -219,21 +219,4 @@ impl Ident<'_> {
   fn as_type(&self) -> proc_macro2::Ident {
     format_ident!("{}", self.0.to_pascal_case())
   }
-}
-
-fn is_rust_keyword(word: &str) -> bool {
-  #[rustfmt::skip]
-  const KEYWORDS: &[&str] = &[
-    // strict keywords
-    "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
-    "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub",
-    "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type",
-    "unsafe", "use", "where", "while",
-
-    // reserved keywords
-    "abstract", "become", "box", "do", "final", "macro", "override", "priv", "try", "typeof",
-    "unsized", "virtual", "yield",
-  ];
-
-  KEYWORDS.contains(&word)
 }

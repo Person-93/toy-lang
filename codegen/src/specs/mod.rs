@@ -97,6 +97,7 @@ impl Specs<'_> {
   pub fn generate_tokens_mod(&self) -> Result<TokenStream> {
     let mut tokens = self.generate_tokens_enum();
     tokens.extend(self.generate_tokens_fmt());
+    tokens.extend(self.generate_tokens_parse());
     Ok(tokens)
   }
 
@@ -162,6 +163,41 @@ impl Specs<'_> {
       }
     }
   }
+
+  fn generate_tokens_parse(&self) -> TokenStream {
+    let static_tokens = self.static_tokens.iter().map(|token| {
+      let ident = if is_rust_keyword(token.name()) {
+        format_ident!("{}_", token.name())
+      } else {
+        format_ident!("{}", token.name())
+      };
+      let ty = format_ident!("{}", token.name().to_pascal_case());
+      quote! {
+        pub fn #ident() -> impl Parser<Token, (), Error = Error> {
+          just(Token::#ty).ignored()
+        }
+      }
+    });
+
+    let dynamic_tokens = self.dynamic_tokens.iter().map(|token| {
+      let ident = format_ident!("{}", token.name());
+      let ty = format_ident!("{}", token.name().to_pascal_case());
+      quote! {
+        pub fn #ident() -> impl Parser<Token, super::super::#ty, Error = Error> {
+          select!{ Token::#ty(value) => value }
+        }
+      }
+    });
+
+    quote! {
+      pub mod parse {
+        use chumsky::prelude::*;
+        use super::{super::Error, Token};
+        #(#static_tokens)*
+        #(#dynamic_tokens)*
+      }
+    }
+  }
 }
 
 fn expand_keyword(name: &str, keyword: &str) -> TokenStream {
@@ -212,4 +248,21 @@ impl<'d> Unnamed<'d> for UnnamedDelimiter<'d> {
       close: self.close,
     }
   }
+}
+
+fn is_rust_keyword(word: &str) -> bool {
+  #[rustfmt::skip]
+  const KEYWORDS: &[&str] = &[
+    // strict keywords
+    "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
+    "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub",
+    "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type",
+    "unsafe", "use", "where", "while",
+
+    // reserved keywords
+    "abstract", "become", "box", "do", "final", "macro", "override", "priv", "try", "typeof",
+    "unsized", "virtual", "yield",
+  ];
+
+  KEYWORDS.contains(&word)
 }

@@ -1,4 +1,4 @@
-pub use self::generated::Token;
+pub use self::generated::*;
 use logos::Lexer;
 #[cfg(test)]
 use serde::Serialize;
@@ -166,3 +166,5 @@ trait TokenBase: Debug + Display + Clone + Eq + PartialEq + Serialize {}
 
 #[cfg(test)]
 impl<T> TokenBase for T where T: Debug + Display + Clone + Eq + PartialEq + Serialize {}
+
+pub type Error = chumsky::error::Simple<Token>;
