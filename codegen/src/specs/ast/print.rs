@@ -294,7 +294,7 @@ impl<'a> Ast<'a> {
         let primary = primary.ident.as_type();
         quote! { Option<#primary> }
       }
-      NodeKind::Delimited(inner, _) => self.print_as_type(inner, None).unwrap_or_else(|| {
+      NodeKind::Delimited(inner, _) => self.print_as_type(inner, Some(node.ident)).unwrap_or_else(|| {
         let message = format!("failed to get type for {ident}");
         quote! { compile_error!(#message) }
       }),
