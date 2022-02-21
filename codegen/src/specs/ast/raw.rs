@@ -144,7 +144,7 @@ impl NodeDef<'_> {
         });
       }
 
-      let def = if lexer.parse_literal("(") {
+      let mut def = if lexer.parse_literal("(") {
         let node_def = NodeDef::parse(lexer, true)?;
         if lexer.parse_literal(")") {
           node_def
@@ -183,10 +183,11 @@ impl NodeDef<'_> {
         NodeDef::Simple(Ident::parse(lexer)?)
       };
 
-      nodes.push(match Modifier::parse(lexer) {
-        Some(modifier) => NodeDef::Modified(Box::new(def), modifier),
-        None => def,
-      });
+      while let Some(modifier) = Modifier::parse(lexer) {
+        def = NodeDef::Modified(Box::new(def), modifier);
+      }
+
+      nodes.push(def);
 
       lexer.skip_whitespace();
     }
