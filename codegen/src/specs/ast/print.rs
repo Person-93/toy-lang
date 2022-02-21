@@ -570,7 +570,12 @@ impl Ident<'_> {
 }
 
 fn modify_parser(inner: &NodeKind<'_>, parser: TokenStream, modifier: Modifier) -> TokenStream {
-  let modified = match modifier {
+  let parser = if let NodeKind::Modified(inner, modifier) = inner {
+    modify_parser(inner, parser, *modifier)
+  } else {
+    parser
+  };
+  match modifier {
     Modifier::Repeat => quote! { #parser.repeated() },
     Modifier::Csv => quote! { #parser.separated_by(comma()) },
     Modifier::OnePlus => quote! { #parser.repeated().at_least(1) },
@@ -579,10 +584,5 @@ fn modify_parser(inner: &NodeKind<'_>, parser: TokenStream, modifier: Modifier) 
     }
     Modifier::Optional => quote! { #parser.or_not() },
     Modifier::Boxed => quote! { #parser.map(Box::new) },
-  };
-  if let NodeKind::Modified(inner, modifier) = inner {
-    modify_parser(inner, modified, *modifier)
-  } else {
-    modified
   }
 }
