@@ -21,8 +21,15 @@ pub enum NodeDef<'a> {
   Simple(Ident<'a>),
   Modified(Box<NodeDef<'a>>, Modifier),
   Delimiter(Box<NodeDef<'a>>, Ident<'a>),
-  Group(Vec<NodeDef<'a>>),
-  Choice(Box<NodeDef<'a>>, Box<NodeDef<'a>>),
+  Group {
+    nodes: Vec<NodeDef<'a>>,
+    inline: bool,
+  },
+  Choice {
+    first: Box<NodeDef<'a>>,
+    second: Box<NodeDef<'a>>,
+    inline: bool,
+  },
   Todo,
 }
 
@@ -89,7 +96,7 @@ impl Entry<'_> {
     }
     buffer.skip_whitespace();
 
-    let node_def = NodeDef::parse(&buffer)?;
+    let node_def = NodeDef::parse(&buffer, false)?;
 
     Ok(Entry {
       ident: node_type,
@@ -125,19 +132,20 @@ impl<'e> Unnamed<'e> for NodeDef<'e> {
 }
 
 impl NodeDef<'_> {
-  fn parse<'p>(lexer: &Lexer<'p>) -> Result<NodeDef<'p>, Error> {
-    let mut defs = Vec::new();
+  fn parse<'p>(lexer: &Lexer<'p>, inline: bool) -> Result<NodeDef<'p>, Error> {
+    let mut nodes = Vec::new();
     while matches!(lexer.peek(), Some(c) if !IDENT_TERMINALS.contains(&c)) {
       if lexer.parse_literal("|") {
         lexer.skip_whitespace();
-        return Ok(NodeDef::Choice(
-          Box::new(NodeDef::from_vec(lexer, defs)?),
-          Box::new(NodeDef::parse(lexer)?),
-        ));
+        return Ok(NodeDef::Choice {
+          first: Box::new(NodeDef::from_vec(lexer, nodes, inline)?),
+          second: Box::new(NodeDef::parse(lexer, inline)?),
+          inline,
+        });
       }
 
       let def = if lexer.parse_literal("(") {
-        let node_def = NodeDef::parse(lexer)?;
+        let node_def = NodeDef::parse(lexer, true)?;
         if lexer.parse_literal(")") {
           node_def
         } else {
@@ -158,7 +166,7 @@ impl NodeDef<'_> {
           });
         }
 
-        let node_def = NodeDef::parse(lexer)?;
+        let node_def = NodeDef::parse(lexer, false)?;
 
         if !lexer.parse_literal(">") {
           return Err(Error {
@@ -175,7 +183,7 @@ impl NodeDef<'_> {
         NodeDef::Simple(Ident::parse(lexer)?)
       };
 
-      defs.push(match Modifier::parse(lexer) {
+      nodes.push(match Modifier::parse(lexer) {
         Some(modifier) => NodeDef::Modified(Box::new(def), modifier),
         None => def,
       });
@@ -183,18 +191,22 @@ impl NodeDef<'_> {
       lexer.skip_whitespace();
     }
 
-    NodeDef::from_vec(lexer, defs)
+    NodeDef::from_vec(lexer, nodes, inline)
   }
 
-  fn from_vec<'a>(buffer: &Lexer<'a>, mut defs: Vec<NodeDef<'a>>) -> Result<NodeDef<'a>, Error> {
-    match defs.len() {
+  fn from_vec<'a>(
+    buffer: &Lexer<'a>,
+    mut nodes: Vec<NodeDef<'a>>,
+    inline: bool,
+  ) -> Result<NodeDef<'a>, Error> {
+    match nodes.len() {
       0 => Err(Error {
         text: String::from(buffer.text()),
         index: buffer.index() - 1,
         kind: ErrorKind::MissingNodeDef,
       }),
-      1 => Ok(defs.pop().unwrap()),
-      _ => Ok(NodeDef::Group(defs)),
+      1 => Ok(nodes.pop().unwrap()),
+      _ => Ok(NodeDef::Group { nodes, inline }),
     }
   }
 }

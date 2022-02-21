@@ -21,8 +21,14 @@ pub enum NodeKind<'n> {
   Node(Ident<'n>),
   StaticToken(Ident<'n>),
   DynamicToken(Ident<'n>),
-  Group(Vec<NodeKind<'n>>),
-  Choice(Vec<NodeKind<'n>>),
+  Group {
+    nodes: Vec<NodeKind<'n>>,
+    inline: bool,
+  },
+  Choice {
+    nodes: Vec<NodeKind<'n>>,
+    inline: bool,
+  },
   Delimited(Box<NodeKind<'n>>, Ident<'n>),
   Modified(Box<NodeKind<'n>>, Modifier),
   Todo,
@@ -60,13 +66,13 @@ impl Display for NodeKind<'_> {
       NodeKind::Node(ident) | NodeKind::StaticToken(ident) | NodeKind::DynamicToken(ident) => {
         write!(f, "{ident}")
       }
-      NodeKind::Group(group) => write!(
+      NodeKind::Group { nodes, inline: _ } => write!(
         f,
         "{}",
-        group
+        nodes
           .iter()
           .map(|child| match child {
-            NodeKind::Group(_) | NodeKind::Choice(_) => format!("({child})"),
+            NodeKind::Group { .. } | NodeKind::Choice { .. } => format!("({child})"),
             NodeKind::Node(_)
             | NodeKind::StaticToken(_)
             | NodeKind::DynamicToken(_)
@@ -77,13 +83,13 @@ impl Display for NodeKind<'_> {
           .collect::<Vec<_>>()
           .join(" ")
       ),
-      NodeKind::Choice(choices) => write!(
+      NodeKind::Choice { nodes, inline: _ } => write!(
         f,
         "{}",
-        choices
+        nodes
           .iter()
           .map(|child| match child {
-            NodeKind::Group(_) | NodeKind::Choice(_) => format!("({child})"),
+            NodeKind::Group { .. } | NodeKind::Choice { .. } => format!("({child})"),
             NodeKind::Node(_)
             | NodeKind::StaticToken(_)
             | NodeKind::DynamicToken(_)
@@ -96,7 +102,7 @@ impl Display for NodeKind<'_> {
       ),
       NodeKind::Delimited(inner, delimiter) => write!(f, "delim[{delimiter}]<{inner}>"),
       NodeKind::Modified(inner, modifier) => match inner.as_ref() {
-        NodeKind::Group(_) | NodeKind::Choice(_) => write!(f, "({inner}){modifier}"),
+        NodeKind::Group { .. } | NodeKind::Choice { .. } => write!(f, "({inner}){modifier}"),
         NodeKind::Node(_)
         | NodeKind::StaticToken(_)
         | NodeKind::DynamicToken(_)

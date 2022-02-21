@@ -35,6 +35,7 @@ pub enum NodeKind<'n> {
 pub struct Group<'g> {
   pub members: Vec<Node<'g>>,
   pub kind: GroupKind,
+  pub inline: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -45,7 +46,13 @@ pub enum GroupKind {
 }
 
 #[derive(Clone, Debug)]
-pub enum Choice<'c> {
+pub struct Choice<'c> {
+  pub kind: ChoiceKind<'c>,
+  pub inline: bool,
+}
+
+#[derive(Clone, Debug)]
+pub enum ChoiceKind<'c> {
   Regular(Vec<Node<'c>>),
   Option {
     primary: Box<Node<'c>>,
@@ -111,7 +118,10 @@ impl Display for NodeKind<'_> {
           .collect::<Vec<_>>()
           .join(" ")
       ),
-      NodeKind::Choice(Choice::Regular(choices)) => {
+      NodeKind::Choice(Choice {
+        kind: ChoiceKind::Regular(choices),
+        inline: _,
+      }) => {
         write!(
           f,
           "{}",
@@ -130,7 +140,10 @@ impl Display for NodeKind<'_> {
             .join(" | ")
         )
       }
-      NodeKind::Choice(Choice::Option { primary, secondary }) => {
+      NodeKind::Choice(Choice {
+        kind: ChoiceKind::Option { primary, secondary },
+        inline: _,
+      }) => {
         write!(f, "{} | {}", primary.ident, secondary.0)
       }
       NodeKind::Delimited(inner, delimiter) => write!(f, "delim[{delimiter}]<{inner}>"),

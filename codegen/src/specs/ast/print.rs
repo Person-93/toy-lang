@@ -1,20 +1,28 @@
 use super::{
   super::{is_rust_keyword, Specs},
-  collapsed::{Ast, Choice, Group, GroupKind, Node, NodeKind},
+  collapsed::{Ast, Choice, ChoiceKind, Group, GroupKind, Node, NodeKind},
   Ident, Modifier,
 };
+use crate::collections::NamedItem;
 use heck::ToPascalCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
-impl Ast<'_> {
-  pub fn print(&self, _specs: &Specs<'_>) -> TokenStream {
+impl<'a> Ast<'a> {
+  pub fn print(&self, specs: &Specs<'_>) -> TokenStream {
     let nodes = self.iter().filter_map(|Node { ident, kind }| match kind {
       NodeKind::Node(_)
       | NodeKind::StaticToken(_)
       | NodeKind::DynamicToken(_)
-      | NodeKind::Choice(Choice::Option { .. }) => None,
-      NodeKind::Group(Group { members, kind }) => match kind {
+      | NodeKind::Choice(Choice {
+        kind: ChoiceKind::Option { .. },
+        inline: _,
+      }) => None,
+      NodeKind::Group(Group {
+        members,
+        kind,
+        inline: _,
+      }) => match kind {
         GroupKind::Zero | GroupKind::One(_) => None,
         GroupKind::Many(indices) => {
           let members = indices
@@ -32,7 +40,10 @@ impl Ast<'_> {
           Some(quote! { pub struct #ident { #(#members),* } })
         }
       },
-      NodeKind::Choice(Choice::Regular(choices)) => {
+      NodeKind::Choice(Choice {
+        kind: ChoiceKind::Regular(choices),
+        inline: _,
+      }) => {
         let variants = choices.iter().map(|choice| {
           let ty = choice.ident.as_type();
           let body = match &choice.kind {
@@ -48,7 +59,11 @@ impl Ast<'_> {
               let ty = ident.as_type();
               quote! { (tokens::#ty) }
             }
-            NodeKind::Group(Group { members, kind }) => match kind {
+            NodeKind::Group(Group {
+              members,
+              kind,
+              inline: _,
+            }) => match kind {
               GroupKind::Zero => quote! {},
               GroupKind::One(idx) => {
                 let node = &members[*idx];
@@ -56,10 +71,17 @@ impl Ast<'_> {
               }
               GroupKind::Many(_) => quote! { (#ty) },
             },
-            NodeKind::Choice(Choice::Regular(_)) => quote! { (#ty) },
-            NodeKind::Choice(Choice::Option {
-              primary,
-              secondary: _,
+            NodeKind::Choice(Choice {
+              kind: ChoiceKind::Regular(_),
+              inline: _,
+            }) => quote! { (#ty) },
+            NodeKind::Choice(Choice {
+              kind:
+                ChoiceKind::Option {
+                  primary,
+                  secondary: _,
+                },
+              inline: _,
             }) => {
               let ty = self.print_as_type(&primary.kind, Some(primary.ident));
               quote! { (Option<#ty>) }
@@ -69,7 +91,7 @@ impl Ast<'_> {
               let ty = self.print_modified_type(&**inner, None, *modifier);
               quote! { (#ty) }
             }
-            NodeKind::Todo => quote! {},
+            NodeKind::Todo => quote! { () },
           };
           quote! { #ty #body }
         });
@@ -79,7 +101,11 @@ impl Ast<'_> {
       }
       NodeKind::Delimited(inner, _delimiter) => match &**inner {
         NodeKind::Node(_) | NodeKind::StaticToken(_) | NodeKind::DynamicToken(_) => None,
-        NodeKind::Group(Group { members, kind }) => match kind {
+        NodeKind::Group(Group {
+          members,
+          kind,
+          inline: _,
+        }) => match kind {
           GroupKind::Zero | GroupKind::One(_) => None,
           GroupKind::Many(indices) => {
             let members = indices
@@ -126,7 +152,11 @@ impl Ast<'_> {
         let ty = ty.as_type();
         Some(quote! { tokens::#ty })
       }
-      NodeKind::Group(Group { members, kind }) => match kind {
+      NodeKind::Group(Group {
+        members,
+        kind,
+        inline: _,
+      }) => match kind {
         GroupKind::Zero => None,
         GroupKind::One(idx) => {
           let node = &members[*idx];
@@ -134,10 +164,16 @@ impl Ast<'_> {
         }
         GroupKind::Many(_) => hint.map(|ident| ident.as_type().to_token_stream()),
       },
-      NodeKind::Choice(Choice::Regular(_)) => hint.map(|ident| ident.as_type().to_token_stream()),
-      NodeKind::Choice(Choice::Option {
-        primary,
-        secondary: _,
+      NodeKind::Choice(Choice {
+        kind: ChoiceKind::Regular(_),
+        inline: _,
+      }) => hint.map(|ident| ident.as_type().to_token_stream()),
+      NodeKind::Choice(Choice {
+        kind: ChoiceKind::Option {
+          primary,
+          secondary: _,
+        },
+        inline: _,
       }) => {
         let ty = self.print_as_type(&primary.kind, Some(primary.ident));
         Some(quote! { Option<#ty> })
@@ -146,6 +182,7 @@ impl Ast<'_> {
       NodeKind::Modified(inner, modifier) => {
         Some(self.print_modified_type(&**inner, None, *modifier))
       }
+      NodeKind::Todo => Some(quote! { () }),
     }
   }
 
@@ -166,7 +203,11 @@ impl Ast<'_> {
           }
           NodeKind::StaticToken(_) => quote! { usize },
           NodeKind::DynamicToken(ident) => ident.as_type().to_token_stream(),
-          NodeKind::Group(Group { members, kind }) => match kind {
+          NodeKind::Group(Group {
+            members,
+            kind,
+            inline: _,
+          }) => match kind {
             GroupKind::Zero | GroupKind::Many(_) => unreachable!(),
             GroupKind::One(idx) => {
               let node = &members[*idx];
@@ -175,13 +216,20 @@ impl Ast<'_> {
                 .unwrap_or_else(|| todo!())
             }
           },
-          NodeKind::Choice(Choice::Regular(_)) => match hint {
+          NodeKind::Choice(Choice {
+            kind: ChoiceKind::Regular(_),
+            inline: _,
+          }) => match hint {
             Some(ident) => ident.as_type().to_token_stream(),
             None => todo!(),
           },
-          NodeKind::Choice(Choice::Option {
-            primary,
-            secondary: _,
+          NodeKind::Choice(Choice {
+            kind:
+              ChoiceKind::Option {
+                primary,
+                secondary: _,
+              },
+            inline: _,
           }) => match self.print_as_type(&primary.kind, Some(primary.ident)) {
             Some(ty) => quote! { Option<#ty> },
             None => todo!(),

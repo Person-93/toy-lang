@@ -35,12 +35,14 @@ fn node_from_def(node_def: ValidNodeDef) -> NodeKind {
     }
     ValidNodeDef::StaticToken(ident) => NodeKind::StaticToken(ident),
     ValidNodeDef::DynamicToken(ident) => NodeKind::DynamicToken(ident),
-    ValidNodeDef::Group(node_defs) => {
-      NodeKind::Group(node_defs.into_iter().map(node_from_def).collect::<Vec<_>>())
-    }
-    ValidNodeDef::Choice(node_defs) => {
-      NodeKind::Choice(node_defs.into_iter().map(node_from_def).collect::<Vec<_>>())
-    }
+    ValidNodeDef::Group { nodes, inline } => NodeKind::Group {
+      nodes: (nodes.into_iter().map(node_from_def).collect::<Vec<_>>()),
+      inline,
+    },
+    ValidNodeDef::Choice { nodes, inline } => NodeKind::Choice {
+      nodes: nodes.into_iter().map(node_from_def).collect::<Vec<_>>(),
+      inline,
+    },
     ValidNodeDef::Delimited(inner, delimiter) => {
       NodeKind::Delimited(Box::new(node_from_def(*inner)), delimiter)
     }
@@ -95,15 +97,21 @@ impl<'v, 'ast: 'v> Validator<'v, 'ast> {
             return Err(Error::UnknownDelim(String::from(delimiter.0)));
           }
         }
-        NodeDef::Group(inner) => ValidNodeDef::Group(
-          inner
+        NodeDef::Group { nodes, inline } => ValidNodeDef::Group {
+          nodes: nodes
             .iter()
             .map(|node| self.validate_node_def(node))
             .collect::<Result<_, _>>()?,
-        ),
-        NodeDef::Choice(first, second) => {
-          ValidNodeDef::Choice(self.validate_choices(first, second, Vec::with_capacity(1))?)
-        }
+          inline: *inline,
+        },
+        NodeDef::Choice {
+          first,
+          second,
+          inline,
+        } => ValidNodeDef::Choice {
+          nodes: self.validate_choices(first, second, Vec::with_capacity(1))?,
+          inline: *inline,
+        },
         NodeDef::Todo => ValidNodeDef::Todo,
       };
       self.cache.borrow_mut().insert(node_def, valid_node.clone());
@@ -119,7 +127,11 @@ impl<'v, 'ast: 'v> Validator<'v, 'ast> {
   ) -> Result<Vec<ValidNodeDef<'ast>>, Error> {
     processed.push(self.validate_node_def(first)?);
     match second {
-      NodeDef::Choice(first, second) => self.validate_choices(first, second, processed),
+      NodeDef::Choice {
+        first,
+        second,
+        inline: _,
+      } => self.validate_choices(first, second, processed),
       node_def => {
         processed.push(self.validate_node_def(node_def)?);
         Ok(processed)
@@ -134,8 +146,14 @@ enum ValidNodeDef<'a> {
   Modified(Box<ValidNodeDef<'a>>, Modifier),
   StaticToken(Ident<'a>),
   DynamicToken(Ident<'a>),
-  Group(Vec<ValidNodeDef<'a>>),
-  Choice(Vec<ValidNodeDef<'a>>),
+  Group {
+    nodes: Vec<ValidNodeDef<'a>>,
+    inline: bool,
+  },
+  Choice {
+    nodes: Vec<ValidNodeDef<'a>>,
+    inline: bool,
+  },
   Delimited(Box<ValidNodeDef<'a>>, Ident<'a>),
   Todo,
 }

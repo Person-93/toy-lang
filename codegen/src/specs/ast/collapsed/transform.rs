@@ -1,6 +1,6 @@
 use super::{
   super::parsed::{Ast as ParsedAst, NodeKind as ParsedNodeKind},
-  Ast, Choice, Group, GroupKind, Ident, Node, NodeKind,
+  Ast, Choice, ChoiceKind, Group, GroupKind, Ident, Node, NodeKind,
 };
 use crate::collections::NamedSet;
 use std::{collections::HashSet, fmt::Display};
@@ -49,8 +49,8 @@ impl<'a> ParsedAst<'a> {
       }
       ParsedNodeKind::StaticToken(ident) => Ok((NodeKind::StaticToken(*ident), hint)),
       ParsedNodeKind::DynamicToken(ident) => Ok((NodeKind::DynamicToken(*ident), hint)),
-      ParsedNodeKind::Group(nodes) => self.transform_group(nodes, hint),
-      ParsedNodeKind::Choice(nodes) => self.transform_choice(nodes, hint),
+      ParsedNodeKind::Group { nodes, inline } => self.transform_group(nodes, *inline, hint),
+      ParsedNodeKind::Choice { nodes, inline } => self.transform_choice(nodes, *inline, hint),
       ParsedNodeKind::Delimited(inner, delimiter) => {
         self.transform_delimited(*delimiter, inner, hint)
       }
@@ -64,6 +64,7 @@ impl<'a> ParsedAst<'a> {
   fn transform_group(
     &'a self,
     nodes: &'a [ParsedNodeKind<'a>],
+    inline: bool,
     hint: Option<Ident<'a>>,
   ) -> Result<(NodeKind<'a>, Option<Ident<'a>>), Error> {
     let nodes: Vec<_> = nodes
@@ -90,7 +91,11 @@ impl<'a> ParsedAst<'a> {
           match kind {
             NodeKind::StaticToken(_) => None,
             NodeKind::Node(_) | NodeKind::DynamicToken(_) | NodeKind::Choice(_) => Some(idx),
-            NodeKind::Group(Group { kind, members: _ }) => match kind {
+            NodeKind::Group(Group {
+              kind,
+              members: _,
+              inline: _,
+            }) => match kind {
               GroupKind::Zero => None,
               GroupKind::One(_) => Some(idx),
               GroupKind::Many(..) => Some(idx),
@@ -120,6 +125,7 @@ impl<'a> ParsedAst<'a> {
           })
           .collect::<Result<_, Error>>()?,
         kind,
+        inline,
       }),
       hint.or(generated_hint),
     ))
@@ -128,6 +134,7 @@ impl<'a> ParsedAst<'a> {
   fn transform_choice(
     &'a self,
     nodes: &'a [ParsedNodeKind<'a>],
+    inline: bool,
     hint: Option<Ident<'a>>,
   ) -> Result<(NodeKind<'a>, Option<Ident<'a>>), Error> {
     let nodes: Vec<_> = nodes
@@ -149,18 +156,33 @@ impl<'a> ParsedAst<'a> {
       NodeKind::Choice(match nodes.len() {
         0 | 1 => unreachable!(),
         2 => match (&nodes[0].kind, &nodes[1].kind) {
-          (NodeKind::StaticToken(_), NodeKind::StaticToken(_)) => Choice::Regular(nodes),
-          (NodeKind::StaticToken(ident), _) => Choice::Option {
-            secondary: *ident,
-            primary: Box::new(nodes.into_iter().nth(1).unwrap()),
+          (NodeKind::StaticToken(_), NodeKind::StaticToken(_)) => Choice {
+            kind: ChoiceKind::Regular(nodes),
+            inline,
           },
-          (_, NodeKind::StaticToken(ident)) => Choice::Option {
-            secondary: *ident,
-            primary: Box::new(nodes.into_iter().next().unwrap()),
+          (NodeKind::StaticToken(ident), _) => Choice {
+            kind: ChoiceKind::Option {
+              secondary: *ident,
+              primary: Box::new(nodes.into_iter().nth(1).unwrap()),
+            },
+            inline,
           },
-          (_, _) => Choice::Regular(nodes),
+          (_, NodeKind::StaticToken(ident)) => Choice {
+            kind: ChoiceKind::Option {
+              secondary: *ident,
+              primary: Box::new(nodes.into_iter().next().unwrap()),
+            },
+            inline,
+          },
+          (_, _) => Choice {
+            kind: ChoiceKind::Regular(nodes),
+            inline,
+          },
         },
-        _ => Choice::Regular(nodes),
+        _ => Choice {
+          kind: ChoiceKind::Regular(nodes),
+          inline,
+        },
       }),
       hint,
     ))
@@ -224,12 +246,19 @@ impl<'n> Nodes<'n> {
       NodeKind::Group(Group {
         members: nodes,
         kind: _,
+        inline: _,
       }) => nodes.iter().any(delegate_to_child),
-      NodeKind::Choice(Choice::Option {
-        primary,
-        secondary: _,
+      NodeKind::Choice(Choice {
+        kind: ChoiceKind::Option {
+          primary,
+          secondary: _,
+        },
+        inline: _,
       }) => delegate_to_child(primary),
-      NodeKind::Choice(Choice::Regular(choices)) => choices.iter().any(delegate_to_child),
+      NodeKind::Choice(Choice {
+        kind: ChoiceKind::Regular(choices),
+        inline: _,
+      }) => choices.iter().any(delegate_to_child),
       NodeKind::Delimited(inner, _) => self.traverse_node(ident, inner, visited),
       NodeKind::Modified(inner, _) => self.traverse_node(ident, inner, visited),
       NodeKind::Todo => false,
@@ -269,12 +298,16 @@ impl<'n> TryFrom<(NodeKind<'n>, Option<Ident<'n>>)> for Node<'n> {
           }),
           GroupKind::Many(_) => Err(MissingName::new("failed to name group", &kind)),
         },
-        NodeKind::Choice(Choice::Regular(_)) => {
-          Err(MissingName::new("failed to name choice", &kind))
-        }
-        NodeKind::Choice(Choice::Option {
-          ref primary,
-          secondary: _,
+        NodeKind::Choice(Choice {
+          kind: ChoiceKind::Regular(_),
+          inline: _,
+        }) => Err(MissingName::new("failed to name choice", &kind)),
+        NodeKind::Choice(Choice {
+          kind: ChoiceKind::Option {
+            ref primary,
+            secondary: _,
+          },
+          inline: _,
         }) => Ok(Node {
           ident: primary.ident,
           kind,
