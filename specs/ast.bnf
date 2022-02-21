@@ -2,7 +2,6 @@ entry ::= <node_type> <whitespace> "=" <whitespace> <node_def>
 node_type ::= <identifier>
 node_def ::= <identifier> |
              <identifier><modifier> |
-             "auto" |
              (<node_def>) |
              "delim[" <identifier> "]<" <node_def> ">" |
              <node_def> <whitespace> <node_def>
