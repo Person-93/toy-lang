@@ -1,5 +1,5 @@
 use super::{
-  super::{is_rust_keyword, Specs},
+  super::{is_rust_keyword, Delimiter, Specs},
   collapsed::{Ast, Choice, ChoiceKind, Group, GroupKind, Node, NodeKind},
   Ident, Modifier,
 };
@@ -264,7 +264,7 @@ impl<'a> Ast<'a> {
     }
   }
 
-  fn print_parser(&self, node: &Node<'a>, _specs: &Specs<'a>) -> TokenStream {
+  fn print_parser(&self, node: &Node<'a>, specs: &Specs<'a>) -> TokenStream {
     let ident = node.ident;
     let ty: TokenStream =
       match &node.kind {
@@ -304,7 +304,7 @@ impl<'a> Ast<'a> {
         NodeKind::Modified(inner, modifier) => self.print_modified_type(inner, None, *modifier),
         NodeKind::Todo => quote! { () },
       };
-    let body = self.print_parser_body(&node.kind, Some(node.ident));
+    let body = self.print_parser_body(&node.kind, Some(node.ident), specs);
 
     let body = if self.is_node_cyclic(node) {
       quote! {
@@ -320,12 +320,17 @@ impl<'a> Ast<'a> {
     }
   }
 
-  fn print_parser_body(&self, node_kind: &NodeKind<'_>, hint: Option<Ident<'_>>) -> TokenStream {
+  fn print_parser_body(
+    &self,
+    node_kind: &NodeKind<'_>,
+    hint: Option<Ident<'_>>,
+    specs: &Specs<'_>,
+  ) -> TokenStream {
     let ident_from_idx = |idx| format_ident!("_{idx}");
     match node_kind {
       NodeKind::Node(child) => {
         let node = self.get(child.0).unwrap();
-        self.print_parser_body(&node.kind, Some(node.ident))
+        self.print_parser_body(&node.kind, Some(node.ident), specs)
       }
       NodeKind::StaticToken(ident) => {
         let ty = ident.as_type();
@@ -341,7 +346,7 @@ impl<'a> Ast<'a> {
         inline,
       }) => {
         let make_sub_parser: Box<dyn Fn(&Node) -> _> = if *inline {
-          Box::new(|node| self.print_parser_body(&node.kind, Some(node.ident)))
+          Box::new(|node| self.print_parser_body(&node.kind, Some(node.ident), specs))
         } else {
           Box::new(|node| {
             let ident = node.ident;
@@ -393,7 +398,13 @@ impl<'a> Ast<'a> {
             quote! { #(#members)*.map(|#binding| #idx ) }
           }
           GroupKind::Many(_) => {
-            let ty = self.print_as_type(node_kind, hint).unwrap();
+            let ty = match self.print_as_type(node_kind, hint) {
+              Some(ty) => ty,
+              None => {
+                let message = format!("unable to compute type for group: {node_kind}");
+                return quote! { compile_error!(#message) };
+              }
+            };
 
             let ident_from_idx = |idx| format_ident!("_{idx}");
 
@@ -492,7 +503,7 @@ impl<'a> Ast<'a> {
             members: _,
             kind: _,
             inline: true,
-          }) => self.print_parser_body(&primary.kind, Some(primary.ident)),
+          }) => self.print_parser_body(&primary.kind, Some(primary.ident), specs),
           _ => {
             let ident = primary.ident;
             quote! { #ident() }
@@ -500,11 +511,26 @@ impl<'a> Ast<'a> {
         };
         quote! { #primary().map(Some).or(# secondary.map(|| None)) }
       }
-      NodeKind::Delimited(_inner, _delimiter) => {
-        quote! { compile_error!("not implemented: parser for delimited node") }
+      NodeKind::Delimited(inner, delimiter) => {
+        let inner = self.print_parser_body(inner, None, specs);
+        match specs.delimiters.get(delimiter.0) {
+          Some(Delimiter {
+            name: _,
+            open,
+            close,
+          }) => {
+            let open = format_ident!("{}", open);
+            let close = format_ident!("{}", close);
+            quote! { #inner.delimited_by(#open(), #close()) }
+          }
+          None => {
+            let message = format!("missing delimiter: {delimiter}");
+            quote! { compile_error!(#message) }
+          }
+        }
       }
       NodeKind::Modified(inner, modifier) => {
-        let ident = self.print_parser_body(inner, None);
+        let ident = self.print_parser_body(inner, None, specs);
         modify_parser(inner, ident, *modifier)
       }
       NodeKind::Todo => quote! { todo() },
@@ -546,10 +572,10 @@ impl Ident<'_> {
 fn modify_parser(inner: &NodeKind<'_>, parser: TokenStream, modifier: Modifier) -> TokenStream {
   let modified = match modifier {
     Modifier::Repeat => quote! { #parser.repeated() },
-    Modifier::Csv => quote! { #parser.separated_by(Token::Comma) },
+    Modifier::Csv => quote! { #parser.separated_by(comma()) },
     Modifier::OnePlus => quote! { #parser.repeated().at_least(1) },
     Modifier::CsvOnePlus => {
-      quote! { #parser.separated_by(Token::Comma).at_least(1) }
+      quote! { #parser.separated_by(comma()).at_least(1) }
     }
     Modifier::Optional => quote! { #parser.or_not() },
     Modifier::Boxed => quote! { #parser.map(Box::new) },

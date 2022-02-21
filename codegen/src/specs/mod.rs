@@ -173,7 +173,7 @@ impl Specs<'_> {
       };
       let ty = format_ident!("{}", token.name().to_pascal_case());
       quote! {
-        pub fn #ident() -> impl Parser<Token, (), Error = Error> {
+        pub fn #ident() -> impl Parser<Token, (), Error = Error> + Copy + Clone {
           just(Token::#ty).ignored()
         }
       }
