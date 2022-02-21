@@ -266,42 +266,45 @@ impl<'a> Ast<'a> {
 
   fn print_parser(&self, node: &Node<'a>, _specs: &Specs<'a>) -> TokenStream {
     let ident = node.ident;
-    let ty: TokenStream = match &node.kind {
-      NodeKind::Node(_) => todo!(),
-      NodeKind::StaticToken(_) => quote! { () },
-      NodeKind::DynamicToken(ident) => ident.as_type().to_token_stream(),
-      NodeKind::Group(Group {
-        members: _,
-        kind,
-        inline: _,
-      }) => match kind {
-        GroupKind::Zero => quote! { () },
-        GroupKind::One(_) | GroupKind::Many(_) => {
-          self.print_as_type(&node.kind, Some(ident)).unwrap()
-        }
-      },
-      NodeKind::Choice(Choice {
-        kind: ChoiceKind::Regular(_),
-        inline: _,
-      }) => ident.as_type().to_token_stream(),
-      NodeKind::Choice(Choice {
-        kind: ChoiceKind::Option {
-          primary,
-          secondary: _,
+    let ty: TokenStream =
+      match &node.kind {
+        NodeKind::Node(_) => todo!(),
+        NodeKind::StaticToken(_) => quote! { () },
+        NodeKind::DynamicToken(ident) => ident.as_type().to_token_stream(),
+        NodeKind::Group(Group {
+          members: _,
+          kind,
+          inline: _,
+        }) => match kind {
+          GroupKind::Zero => quote! { () },
+          GroupKind::One(_) | GroupKind::Many(_) => {
+            self.print_as_type(&node.kind, Some(ident)).unwrap()
+          }
         },
-        inline: _,
-      }) => {
-        let primary = primary.ident.as_type();
-        quote! { Option<#primary> }
-      }
-      NodeKind::Delimited(inner, _) => self.print_as_type(inner, Some(node.ident)).unwrap_or_else(|| {
-        let message = format!("failed to get type for {ident}");
-        quote! { compile_error!(#message) }
-      }),
-      NodeKind::Modified(inner, modifier) => self.print_modified_type(inner, None, *modifier),
-      NodeKind::Todo => quote! { () },
-    };
-    let body = self.print_parser_body(node);
+        NodeKind::Choice(Choice {
+          kind: ChoiceKind::Regular(_),
+          inline: _,
+        }) => ident.as_type().to_token_stream(),
+        NodeKind::Choice(Choice {
+          kind: ChoiceKind::Option {
+            primary,
+            secondary: _,
+          },
+          inline: _,
+        }) => {
+          let primary = primary.ident.as_type();
+          quote! { Option<#primary> }
+        }
+        NodeKind::Delimited(inner, _) => self
+          .print_as_type(inner, Some(node.ident))
+          .unwrap_or_else(|| {
+            let message = format!("failed to get type for {ident}");
+            quote! { compile_error!(#message) }
+          }),
+        NodeKind::Modified(inner, modifier) => self.print_modified_type(inner, None, *modifier),
+        NodeKind::Todo => quote! { () },
+      };
+    let body = self.print_parser_body(&node.kind, Some(node.ident));
 
     let body = if self.is_node_cyclic(node) {
       quote! {
@@ -317,11 +320,13 @@ impl<'a> Ast<'a> {
     }
   }
 
-  fn print_parser_body(&self, node: &Node<'_>) -> TokenStream {
-    let ident = node.ident;
+  fn print_parser_body(&self, node_kind: &NodeKind<'_>, hint: Option<Ident<'_>>) -> TokenStream {
     let ident_from_idx = |idx| format_ident!("_{idx}");
-    match &node.kind {
-      NodeKind::Node(_) => todo!(),
+    match node_kind {
+      NodeKind::Node(child) => {
+        let node = self.get(child.0).unwrap();
+        self.print_parser_body(&node.kind, Some(node.ident))
+      }
       NodeKind::StaticToken(ident) => {
         let ty = ident.as_type();
         quote! { just(Token::#ty).ignored() }
@@ -335,8 +340,8 @@ impl<'a> Ast<'a> {
         kind,
         inline,
       }) => {
-        let make_sub_parser: Box<dyn Fn(_) -> _> = if *inline {
-          Box::new(|node| self.print_parser_body(node))
+        let make_sub_parser: Box<dyn Fn(&Node) -> _> = if *inline {
+          Box::new(|node| self.print_parser_body(&node.kind, Some(node.ident)))
         } else {
           Box::new(|node| {
             let ident = node.ident;
@@ -388,7 +393,7 @@ impl<'a> Ast<'a> {
             quote! { #(#members)*.map(|#binding| #idx ) }
           }
           GroupKind::Many(_) => {
-            let ty = self.print_as_type(&node.kind, Some(ident)).unwrap();
+            let ty = self.print_as_type(node_kind, hint).unwrap();
 
             let ident_from_idx = |idx| format_ident!("_{idx}");
 
@@ -436,12 +441,12 @@ impl<'a> Ast<'a> {
         kind: ChoiceKind::Regular(choices),
         inline: _,
       }) => {
-        let ty = self.print_as_type(&node.kind, Some(ident)).unwrap();
+        let ty = self.print_as_type(node_kind, hint).unwrap();
         let choices = choices.iter().enumerate().map(|(idx, choice)| {
           let ident = choice.ident;
           let variant = ident.as_type();
 
-          let func = make_func(self, &node.kind, ty.clone(), variant.to_token_stream());
+          let func = make_func(self, node_kind, ty.clone(), variant.to_token_stream());
 
           let choice = quote! { #ident().map(#func) };
           return if idx == 0 {
@@ -487,7 +492,7 @@ impl<'a> Ast<'a> {
             members: _,
             kind: _,
             inline: true,
-          }) => self.print_parser_body(primary),
+          }) => self.print_parser_body(&primary.kind, Some(primary.ident)),
           _ => {
             let ident = primary.ident;
             quote! { #ident() }
@@ -499,7 +504,7 @@ impl<'a> Ast<'a> {
         quote! { compile_error!("not implemented: parser for delimited node") }
       }
       NodeKind::Modified(inner, modifier) => {
-        let ident = quote! { compile_error!("not fully implemented") };
+        let ident = self.print_parser_body(inner, None);
         modify_parser(inner, ident, *modifier)
       }
       NodeKind::Todo => quote! { todo() },
