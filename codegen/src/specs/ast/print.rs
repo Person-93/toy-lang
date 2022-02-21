@@ -512,7 +512,7 @@ impl<'a> Ast<'a> {
         quote! { #primary().map(Some).or(# secondary.map(|| None)) }
       }
       NodeKind::Delimited(inner, delimiter) => {
-        let inner = self.print_parser_body(inner, None, specs);
+        let inner = self.print_parser_body(inner, hint, specs);
         match specs.delimiters.get(delimiter.0) {
           Some(Delimiter {
             name: _,
