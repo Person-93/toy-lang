@@ -34,6 +34,10 @@ impl<'ni, T: NamedItem<'ni>> NamedSet<'ni, T> {
       .map(|wrapper| &wrapper.0)
   }
 
+  pub fn index_of(&self, name: &'ni str) -> Option<usize> {
+    self.0.get_index_of(&Wrapper::new(T::dummy(name)))
+  }
+
   pub fn contains(&self, name: &'ni str) -> bool {
     self.0.contains(&Wrapper(T::dummy(name), PhantomData))
   }
