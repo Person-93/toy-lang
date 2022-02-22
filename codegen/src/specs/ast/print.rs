@@ -328,10 +328,7 @@ impl<'a> Ast<'a> {
   ) -> TokenStream {
     let ident_from_idx = |idx| format_ident!("_{idx}");
     match node_kind {
-      NodeKind::Node(child) => {
-        let node = self.get(child.0).unwrap();
-        self.print_parser_body(&node.kind, Some(node.ident), specs)
-      }
+      NodeKind::Node(child) => quote! { #child() },
       NodeKind::StaticToken(ident) => quote! { #ident() },
       NodeKind::DynamicToken(ident) => {
         let ty = ident.as_type();
@@ -341,100 +338,85 @@ impl<'a> Ast<'a> {
         members,
         kind,
         inline,
-      }) => {
-        let make_sub_parser: Box<dyn Fn(&Node) -> _> = if *inline {
-          Box::new(|node| self.print_parser_body(&node.kind, Some(node.ident), specs))
-        } else {
-          Box::new(|node| {
-            let ident = node.ident;
-            let parser = quote! { #ident() };
-            if let NodeKind::Modified(inner, modifier) = &node.kind {
-              modify_parser(inner, parser, *modifier)
-            } else {
+      }) => match kind {
+        GroupKind::Zero => {
+          let mut members = members.iter();
+          let first = self.print_sub_parser(members.next().unwrap(), specs, *inline);
+          let members: Vec<_> = members
+            .map(|node| {
+              let parser = self.print_sub_parser(node, specs, *inline);
+              quote! { .then(#parser) }
+            })
+            .collect();
+
+          if members.is_empty() {
+            first
+          } else {
+            quote! { #first #(#members)*.ignored() }
+          }
+        }
+        GroupKind::One(idx) => {
+          let binding =
+            (1..members.len()).fold(ident_from_idx(0).to_token_stream(), |accum, idx| {
+              let ident = ident_from_idx(idx);
+              quote! { (#accum, #ident) }
+            });
+
+          let members = members.iter().enumerate().map(|(current_idx, node)| {
+            let parser = self.print_sub_parser(node, specs, *inline);
+            if current_idx == 0 {
               parser
-            }
-          })
-        };
-        match kind {
-          GroupKind::Zero => {
-            let mut members = members.iter();
-            let first = make_sub_parser(members.next().unwrap());
-            let members: Vec<_> = members
-              .map(|node| {
-                let parser = make_sub_parser(node);
-                quote! { .then(#parser) }
-              })
-              .collect();
-
-            if members.is_empty() {
-              first
             } else {
-              quote! { #first #(#members)*.ignored() }
+              quote! { .then(#parser) }
             }
-          }
-          GroupKind::One(idx) => {
-            let binding =
-              (1..members.len()).fold(ident_from_idx(0).to_token_stream(), |accum, idx| {
-                let ident = ident_from_idx(idx);
-                quote! { (#accum, #ident) }
-              });
+          });
 
-            let members = members.iter().enumerate().map(|(current_idx, node)| {
-              let parser = make_sub_parser(node);
-              if current_idx == 0 {
-                parser
-              } else {
-                quote! { .then(#parser) }
-              }
+          let idx = ident_from_idx(*idx);
+
+          quote! { #(#members)*.map(|#binding| #idx ) }
+        }
+        GroupKind::Many(_) => {
+          let ty = match self.print_as_type(node_kind, hint) {
+            Some(ty) => ty,
+            None => {
+              let message = format!("unable to compute type for group: {node_kind}");
+              return quote! { compile_error!(#message) };
+            }
+          };
+
+          let ident_from_idx = |idx| format_ident!("_{idx}");
+
+          let member_init = members
+            .iter()
+            .map(|node| {
+              self
+                .print_as_type(&node.kind, Some(node.ident))
+                .map(|_| node.ident)
+            })
+            .enumerate()
+            .filter_map(|(idx, ident)| ident.map(|ident| (idx, ident)))
+            .map(|(idx, ident)| {
+              let idx = ident_from_idx(idx);
+              quote! { #ident: #idx }
             });
 
-            let idx = ident_from_idx(*idx);
-
-            quote! { #(#members)*.map(|#binding| #idx ) }
-          }
-          GroupKind::Many(_) => {
-            let ty = match self.print_as_type(node_kind, hint) {
-              Some(ty) => ty,
-              None => {
-                let message = format!("unable to compute type for group: {node_kind}");
-                return quote! { compile_error!(#message) };
-              }
-            };
-
-            let ident_from_idx = |idx| format_ident!("_{idx}");
-
-            let member_init = members
-              .iter()
-              .map(|node| {
-                self
-                  .print_as_type(&node.kind, Some(node.ident))
-                  .map(|_| node.ident)
-              })
-              .enumerate()
-              .filter_map(|(idx, ident)| ident.map(|ident| (idx, ident)))
-              .map(|(idx, ident)| {
-                let idx = ident_from_idx(idx);
-                quote! { #ident: #idx }
-              });
-
-            let binding =
-              (1..members.len()).fold(ident_from_idx(0).to_token_stream(), |accum, idx| {
-                let ident = ident_from_idx(idx);
-                quote! { (#accum, #ident) }
-              });
-
-            let members = members.iter().enumerate().map(|(current_idx, node)| {
-              let parser = make_sub_parser(node);
-              if current_idx == 0 {
-                parser
-              } else {
-                quote! { .then(#parser) }
-              }
+          let binding =
+            (1..members.len()).fold(ident_from_idx(0).to_token_stream(), |accum, idx| {
+              let ident = ident_from_idx(idx);
+              quote! { (#accum, #ident) }
             });
 
-            quote! {
-              #(#members)*.map(|#binding| #ty { #(#member_init),* })
+          let members = members.iter().enumerate().map(|(current_idx, node)| {
+            let parser = self.print_sub_parser(node, specs, *inline);
+            if current_idx == 0 {
+              parser
+            } else {
+              quote! { .then(#parser) }
             }
+          });
+
+          quote! {
+            #(#members)*.map(|#binding| #ty { #(#member_init),* })
           }
         }
       }
@@ -447,7 +429,7 @@ impl<'a> Ast<'a> {
           let ident = choice.ident;
           let variant = ident.as_type();
 
-          let func = make_func(self, node_kind, ty.clone(), variant.to_token_stream());
+          let func = make_func(self, &choice.kind, ty.clone(), variant.to_token_stream());
 
           let choice = quote! { #ident().map(#func) };
           return if idx == 0 {
@@ -489,41 +471,54 @@ impl<'a> Ast<'a> {
         inline: _,
       }) => {
         let primary = match &primary.kind {
-          NodeKind::Group(Group {
-            members: _,
-            kind: _,
-            inline: true,
-          }) => self.print_parser_body(&primary.kind, Some(primary.ident), specs),
+          NodeKind::Group(Group { inline, .. }) => self.print_sub_parser(primary, specs, *inline),
           _ => {
             let ident = primary.ident;
             quote! { #ident() }
           }
         };
-        quote! { #primary().map(Some).or(#secondary.map(|| None)) }
+        quote! { #primary.map(Some).or(#secondary().map(|_| None)) }
       }
-      NodeKind::Delimited(inner, delimiter) => {
-        let inner = self.print_parser_body(inner, hint, specs);
-        match specs.delimiters.get(delimiter.0) {
-          Some(Delimiter {
-            name: _,
-            open,
-            close,
-          }) => {
-            let open = format_ident!("{}", open);
-            let close = format_ident!("{}", close);
-            quote! { #inner.delimited_by(#open(), #close()) }
-          }
-          None => {
-            let message = format!("missing delimiter: {delimiter}");
-            quote! { compile_error!(#message) }
-          }
-        }
-      }
+      NodeKind::Delimited(inner, delimiter) => self.delimit_parser(
+        self.print_parser_body(inner, hint, specs),
+        *delimiter,
+        specs,
+      ),
       NodeKind::Modified(inner, modifier) => {
-        let ident = self.print_parser_body(inner, None, specs);
-        modify_parser(inner, ident, *modifier)
+        modify_parser(inner, self.print_parser_body(inner, None, specs), *modifier)
       }
-      NodeKind::Todo => quote! { todo() },
+      NodeKind::Todo => print_todo(),
+    }
+  }
+
+  fn print_sub_parser(&self, node: &Node<'_>, specs: &Specs<'_>, inline: bool) -> TokenStream {
+    if inline {
+      self.print_parser_body(&node.kind, None, specs)
+    } else {
+      let ident = node.ident;
+      let parser = quote! { #ident() };
+      match &node.kind {
+        NodeKind::Node(child) => quote! { #child() },
+        NodeKind::StaticToken(_) | NodeKind::DynamicToken(_) => parser,
+        NodeKind::Group(Group { inline: true, .. }) => {
+          self.print_parser_body(&node.kind, None, specs)
+        }
+        NodeKind::Group(Group { inline: false, .. }) => parser,
+        NodeKind::Choice(Choice { inline: true, .. }) => {
+          self.print_parser_body(&node.kind, None, specs)
+        }
+        NodeKind::Choice(Choice { inline: false, .. }) => parser,
+        NodeKind::Delimited(inner, delimiter) => {
+          let parser = match &**inner {
+            NodeKind::Node(child) => quote! { #child() },
+            NodeKind::Modified(inner, modifier) => modify_parser(inner, parser, *modifier),
+            _ => parser,
+          };
+          self.delimit_parser(parser, *delimiter, specs)
+        }
+        NodeKind::Modified(inner, modifier) => modify_parser(inner, parser, *modifier),
+        NodeKind::Todo => print_todo(),
+      }
     }
   }
 
@@ -537,6 +532,29 @@ impl<'a> Ast<'a> {
       | NodeKind::Modified(_, _) => {
         let idx = self.nodes.index_of(node.name()).unwrap();
         self.cyclic[idx]
+      }
+    }
+  }
+
+  fn delimit_parser(
+    &self,
+    parser: TokenStream,
+    delimiter: Ident<'_>,
+    specs: &Specs<'_>,
+  ) -> TokenStream {
+    match specs.delimiters.get(delimiter.0) {
+      Some(Delimiter {
+        name: _,
+        open,
+        close,
+      }) => {
+        let open = format_ident!("{}", open);
+        let close = format_ident!("{}", close);
+        quote! { #parser.delimited_by(#open(), #close()) }
+      }
+      None => {
+        let message = format!("missing delimiter: {delimiter}");
+        quote! { compile_error!(#message) }
       }
     }
   }
@@ -575,4 +593,8 @@ fn modify_parser(inner: &NodeKind<'_>, parser: TokenStream, modifier: Modifier) 
     Modifier::Optional => quote! { #parser.or_not() },
     Modifier::Boxed => quote! { #parser.map(Box::new) },
   }
+}
+
+fn print_todo() -> TokenStream {
+  quote! { todo::<Token, (), Error>() }
 }
