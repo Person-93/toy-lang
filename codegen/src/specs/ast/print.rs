@@ -350,7 +350,12 @@ impl<'a> Ast<'a> {
         } else {
           Box::new(|node| {
             let ident = node.ident;
-            quote! { #ident() }
+            let parser = quote! { #ident() };
+            if let NodeKind::Modified(inner, modifier) = &node.kind {
+              modify_parser(inner, parser, *modifier)
+            } else {
+              parser
+            }
           })
         };
         match kind {
@@ -379,13 +384,6 @@ impl<'a> Ast<'a> {
 
             let members = members.iter().enumerate().map(|(current_idx, node)| {
               let parser = make_sub_parser(node);
-
-              let parser = if let NodeKind::Modified(inner, modifier) = &node.kind {
-                modify_parser(inner, parser, *modifier)
-              } else {
-                parser
-              };
-
               if current_idx == 0 {
                 parser
               } else {
@@ -430,11 +428,6 @@ impl<'a> Ast<'a> {
 
             let members = members.iter().enumerate().map(|(current_idx, node)| {
               let parser = make_sub_parser(node);
-              let parser = if let NodeKind::Modified(inner, modifier) = &node.kind {
-                modify_parser(inner, parser, *modifier)
-              } else {
-                parser
-              };
               if current_idx == 0 {
                 parser
               } else {
@@ -509,7 +502,7 @@ impl<'a> Ast<'a> {
             quote! { #ident() }
           }
         };
-        quote! { #primary().map(Some).or(# secondary.map(|| None)) }
+        quote! { #primary().map(Some).or(#secondary.map(|| None)) }
       }
       NodeKind::Delimited(inner, delimiter) => {
         let inner = self.print_parser_body(inner, hint, specs);
