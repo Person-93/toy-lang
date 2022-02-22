@@ -419,7 +419,7 @@ impl<'a> Ast<'a> {
             #(#members)*.map(|#binding| #ty { #(#member_init),* })
           }
         }
-      }
+      },
       NodeKind::Choice(Choice {
         kind: ChoiceKind::Regular(choices),
         inline: _,
@@ -429,9 +429,11 @@ impl<'a> Ast<'a> {
           let ident = choice.ident;
           let variant = ident.as_type();
 
+          let parser = self.print_sub_parser(choice, specs, false);
+
           let func = make_func(self, &choice.kind, ty.clone(), variant.to_token_stream());
 
-          let choice = quote! { #ident().map(#func) };
+          let choice = quote! { #parser.map(#func) };
           return if idx == 0 {
             choice
           } else {
