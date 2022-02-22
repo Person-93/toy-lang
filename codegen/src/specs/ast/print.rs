@@ -332,10 +332,7 @@ impl<'a> Ast<'a> {
         let node = self.get(child.0).unwrap();
         self.print_parser_body(&node.kind, Some(node.ident), specs)
       }
-      NodeKind::StaticToken(ident) => {
-        let ty = ident.as_type();
-        quote! { just(Token::#ty).ignored() }
-      }
+      NodeKind::StaticToken(ident) => quote! { #ident() },
       NodeKind::DynamicToken(ident) => {
         let ty = ident.as_type();
         quote! { select! { Token::#ty(item) => item } }
