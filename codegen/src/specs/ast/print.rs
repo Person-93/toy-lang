@@ -134,6 +134,8 @@ impl<'a> Ast<'a> {
 
     let parsers = self.nodes.iter().map(|node| self.print_parser(node, specs));
 
+    let recursive_parsers = self.print_recursive_parsers(specs);
+
     quote! {
       #![allow(dead_code)]
 
@@ -146,6 +148,7 @@ impl<'a> Ast<'a> {
         use tokens::{parse::*, Token};
 
         #(#parsers)*
+        #recursive_parsers
       }
     }
   }
@@ -306,15 +309,13 @@ impl<'a> Ast<'a> {
         NodeKind::Modified(inner, modifier) => self.print_modified_type(inner, None, *modifier),
         NodeKind::Todo => quote! { () },
       };
-    let body = self.print_parser_body(&node.kind, Some(node.ident), specs);
-
     let body = if self.is_node_cyclic(node) {
-      quote! {
-        compile_error!("not implemented: cyclic nodes");
-        #body
-      }
+      let idx = self.index_of(node.ident.0).unwrap();
+      let idx = self.cyclic[0..=idx].iter().filter(|b| **b).count() - 1;
+      let idx = proc_macro2::Literal::usize_unsuffixed(idx);
+      quote! { RECURSIVE.with(|parsers| parsers.borrow().#idx.clone()) }
     } else {
-      body
+      self.print_parser_body(&node.kind, Some(node.ident), specs)
     };
 
     quote! {
@@ -328,7 +329,6 @@ impl<'a> Ast<'a> {
     hint: Option<Ident<'_>>,
     specs: &Specs<'_>,
   ) -> TokenStream {
-    let ident_from_idx = |idx| format_ident!("_{idx}");
     match node_kind {
       NodeKind::Node(child) => quote! { #child() },
       NodeKind::StaticToken(ident) => quote! { #ident() },
@@ -385,8 +385,6 @@ impl<'a> Ast<'a> {
               return quote! { compile_error!(#message) };
             }
           };
-
-          let ident_from_idx = |idx| format_ident!("_{idx}");
 
           let member_init = members
             .iter()
@@ -528,15 +526,15 @@ impl<'a> Ast<'a> {
 
   fn is_node_cyclic(&self, node: &Node<'_>) -> bool {
     match node.kind {
-      NodeKind::StaticToken(_) | NodeKind::DynamicToken(_) | NodeKind::Todo => false,
-      NodeKind::Node(_)
-      | NodeKind::Group(_)
-      | NodeKind::Choice(_)
-      | NodeKind::Delimited(_, _)
-      | NodeKind::Modified(_, _) => {
+      NodeKind::Node(_) | NodeKind::Group(_) | NodeKind::Choice(_) => {
         let idx = self.nodes.index_of(node.name()).unwrap();
         self.cyclic[idx]
       }
+      NodeKind::StaticToken(_)
+      | NodeKind::DynamicToken(_)
+      | NodeKind::Delimited(_, _)
+      | NodeKind::Modified(_, _)
+      | NodeKind::Todo => false,
     }
   }
 
@@ -560,6 +558,231 @@ impl<'a> Ast<'a> {
         let message = format!("missing delimiter: {delimiter}");
         quote! { compile_error!(#message) }
       }
+    }
+  }
+
+  fn print_recursive_parsers(&self, specs: &Specs<'_>) -> TokenStream {
+    let nodes: Vec<_> = self
+      .nodes
+      .iter()
+      .zip(self.cyclic.iter())
+      .filter_map(|(node, recursive)| recursive.then(|| node))
+      .collect();
+
+    let idents = nodes.iter().map(|node| node.ident.to_token_stream());
+    let idents = quote! { (#(#idents),*) };
+
+    let parser_types = nodes.iter().map(|node| {
+      let ty = self.print_as_type(&node.kind, Some(node.ident)).unwrap();
+      quote! { Recursive<'static, Token, #ty, Error> }
+    });
+
+    let decls = nodes.iter().map(|node| {
+      let ident = node.ident;
+      quote! {
+        #[allow(unused_assignments)]
+        let mut #ident = recursive(|_| todo());
+      }
+    });
+
+    let body = nodes.iter().fold(TokenStream::new(), |accum, node| {
+      let ident = node.ident;
+      let parser = self.print_recursive_sub_parser(&node.kind, Some(node.ident), specs);
+      quote! {
+        #ident = recursive(|#[allow(unused_variables)] #ident| {
+          #accum
+          #parser
+        });
+      }
+    });
+
+    quote! {
+      thread_local! {
+        static RECURSIVE: std::cell::RefCell<(#(#parser_types),*)> = std::cell::RefCell::new({
+          #(#decls)*
+          #body
+          #idents
+        });
+      }
+    }
+  }
+
+  fn print_recursive_sub_parser(
+    &self,
+    node_kind: &NodeKind<'_>,
+    hint: Option<Ident<'_>>,
+    specs: &Specs<'_>,
+  ) -> TokenStream {
+    match node_kind {
+      NodeKind::Node(child) => {
+        let child = self.get(child.0).unwrap();
+        if self.is_node_cyclic(child) {
+          let ident = child.ident;
+          quote! { #ident.clone() }
+        } else {
+          self.print_recursive_sub_parser(&child.kind, hint, specs)
+        }
+      }
+      NodeKind::StaticToken(ident) | NodeKind::DynamicToken(ident) => quote! { #ident() },
+      NodeKind::Group(Group {
+        members,
+        kind,
+        inline: _,
+      }) => match kind {
+        GroupKind::Zero => self.print_parser_body(node_kind, None, specs),
+        GroupKind::One(idx) => {
+          let binding =
+            (1..members.len()).fold(ident_from_idx(0).to_token_stream(), |accum, idx| {
+              let ident = ident_from_idx(idx);
+              quote! { (#accum, #ident) }
+            });
+
+          let members = members.iter().enumerate().map(|(current_idx, node)| {
+            if self.is_node_cyclic(node) {
+              let ident = node.ident;
+              quote! { #ident.clone() }
+            } else {
+              let parser = self.print_recursive_sub_parser(&node.kind, hint, specs);
+              if current_idx == 0 {
+                parser
+              } else {
+                quote! { .then(#parser) }
+              }
+            }
+          });
+
+          let idx = ident_from_idx(*idx);
+
+          quote! { #(#members)*.map(|#binding| #idx ) }
+        }
+        GroupKind::Many(_) => {
+          let ty = match self.print_as_type(node_kind, hint) {
+            Some(ty) => ty,
+            None => {
+              let message = format!("unable to compute type for group: {node_kind}");
+              return quote! { compile_error!(#message) };
+            }
+          };
+
+          let member_init = members
+            .iter()
+            .map(|node| {
+              self
+                .print_as_type(&node.kind, Some(node.ident))
+                .map(|_| node.ident)
+            })
+            .enumerate()
+            .filter_map(|(idx, ident)| ident.map(|ident| (idx, ident)))
+            .map(|(idx, ident)| {
+              let idx = ident_from_idx(idx);
+              quote! { #ident: #idx }
+            });
+
+          let binding =
+            (1..members.len()).fold(ident_from_idx(0).to_token_stream(), |accum, idx| {
+              let ident = ident_from_idx(idx);
+              quote! { (#accum, #ident) }
+            });
+
+          let members = members.iter().enumerate().map(|(current_idx, node)| {
+            if self.is_node_cyclic(node) {
+              node.ident.to_token_stream()
+            } else {
+              let parser = self.print_recursive_sub_parser(&node.kind, hint, specs);
+              if current_idx == 0 {
+                parser
+              } else {
+                quote! { .then(#parser) }
+              }
+            }
+          });
+
+          quote! {
+            #(#members)*.map(|#binding| #ty { #(#member_init),* })
+          }
+        }
+      },
+      NodeKind::Choice(Choice {
+        kind: ChoiceKind::Regular(choices),
+        inline: _,
+      }) => {
+        let ty = self.print_as_type(node_kind, hint).unwrap();
+        let choices = choices.iter().enumerate().map(|(idx, node)| {
+          let ident = node.ident;
+          let variant = ident.as_type();
+
+          let parser = if self.is_node_cyclic(node) {
+            quote! { #ident.clone() }
+          } else {
+            self.print_recursive_sub_parser(&node.kind, hint, specs)
+          };
+
+          let func = make_func(self, &node.kind, ty.clone(), variant.to_token_stream());
+
+          let choice = quote! { #parser.map(#func) };
+          return if idx == 0 {
+            choice
+          } else {
+            quote! { .or(#choice) }
+          };
+
+          fn make_func(
+            ast: &Ast<'_>,
+            kind: &NodeKind<'_>,
+            ty: TokenStream,
+            variant: TokenStream,
+          ) -> TokenStream {
+            match kind {
+              NodeKind::Node(child) => make_func(ast, &ast.get(child.0).unwrap().kind, ty, variant),
+              NodeKind::StaticToken(_) => quote! { |_| #ty::#variant },
+              NodeKind::DynamicToken(_) => quote! { #ty::#variant },
+              NodeKind::Group(Group {
+                members: _,
+                kind,
+                inline: _,
+              }) => match kind {
+                GroupKind::Zero => quote! { |_| #ty::#variant },
+                GroupKind::One(_) => quote! { #ty::#variant },
+                GroupKind::Many(_) => quote! { #ty::#variant },
+              },
+              NodeKind::Choice(_) => quote! { #ty::#variant },
+              NodeKind::Delimited(_, _) => quote! { #ty::#variant },
+              NodeKind::Modified(_, _) => quote! { #ty::#variant },
+              NodeKind::Todo => quote! { #ty::#variant },
+            }
+          }
+        });
+        quote! { #(#choices)* }
+      }
+      NodeKind::Choice(Choice {
+        kind: ChoiceKind::Option { primary, secondary },
+        inline: _,
+      }) => {
+        let primary = if self.is_node_cyclic(primary) {
+          let ident = primary.ident;
+          quote! { #ident.clone() }
+        } else {
+          match &primary.kind {
+            NodeKind::Group(_) => self.print_recursive_sub_parser(&primary.kind, hint, specs),
+            _ => {
+              let ident = primary.ident;
+              quote! { #ident() }
+            }
+          }
+        };
+        quote! { #primary.map(Some).or(#secondary().map(|_| None)) }
+      }
+      NodeKind::Delimited(inner, delimiter) => self.delimit_parser(
+        self.print_recursive_sub_parser(inner, hint, specs),
+        *delimiter,
+        specs,
+      ),
+      NodeKind::Modified(inner, modifier) => modify_parser(
+        &NodeKind::Todo, // dummy arg to prevent it from recursing
+        self.print_recursive_sub_parser(inner, hint, specs),
+        *modifier,
+      ),
+      NodeKind::Todo => print_todo(),
     }
   }
 }
@@ -601,4 +824,8 @@ fn modify_parser(inner: &NodeKind<'_>, parser: TokenStream, modifier: Modifier) 
 
 fn print_todo() -> TokenStream {
   quote! { todo::<Token, (), Error>() }
+}
+
+fn ident_from_idx(idx: usize) -> proc_macro2::Ident {
+  format_ident!("_{idx}")
 }
