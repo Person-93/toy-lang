@@ -1,8 +1,11 @@
 use super::{
-  super::parsed::{Ast as ParsedAst, NodeKind as ParsedNodeKind},
+  super::parsed::{
+    Ast as ParsedAst, NodeKind as ParsedNodeKind, TaggedNodeKind as ParsedTaggedNodeKind,
+  },
   Ast, Choice, ChoiceKind, Group, GroupKind, Ident, Node, NodeKind,
 };
-use crate::collections::NamedSet;
+use crate::collections::{NamedSet, Unnamed};
+use crate::specs::ast::collapsed::TaggedNodeKind;
 use std::{collections::HashSet, fmt::Display};
 use thiserror::Error;
 
@@ -14,7 +17,15 @@ impl<'a> ParsedAst<'a> {
         .map(|node| {
           self
             .transform_node_kind(&node.kind, Some(node.ident))
-            .and_then(|node| Ok(Node::try_from(node)?))
+            .and_then(|(kind, hint)| {
+              Ok(Node::try_from((
+                TaggedNodeKind {
+                  kind,
+                  tag: node.tag,
+                },
+                hint,
+              ))?)
+            })
             .map_err(|err| err.context(format!("failed to parse node: {node}")))
         })
         .collect::<Result<NamedSet<_>, _>>()?,
@@ -63,13 +74,25 @@ impl<'a> ParsedAst<'a> {
 
   fn transform_group(
     &'a self,
-    nodes: &'a [ParsedNodeKind<'a>],
+    nodes: &'a [ParsedTaggedNodeKind<'a>],
     inline: bool,
     hint: Option<Ident<'a>>,
   ) -> Result<(NodeKind<'a>, Option<Ident<'a>>), Error> {
     let nodes: Vec<_> = nodes
       .iter()
-      .map(|child| self.transform_node_kind(child, None))
+      .map(|child| {
+        self
+          .transform_node_kind(&child.kind, None)
+          .map(|(kind, hint)| {
+            (
+              TaggedNodeKind {
+                kind,
+                tag: child.tag,
+              },
+              hint,
+            )
+          })
+      })
       .collect::<Result<_, _>>()
       .map_err(|err| {
         err.context(format!(
@@ -86,7 +109,7 @@ impl<'a> ParsedAst<'a> {
       .iter()
       .enumerate()
       .filter_map(|(idx, (kind, _))| {
-        return get_index(kind, idx);
+        return get_index(&kind.kind, idx);
         fn get_index(kind: &NodeKind, idx: usize) -> Option<usize> {
           match kind {
             NodeKind::StaticToken(_) => None,
@@ -119,8 +142,12 @@ impl<'a> ParsedAst<'a> {
           .into_iter()
           .map(|(kind, hint)| {
             Ok(match hint {
-              Some(ident) => Node { ident, kind },
-              None => Node::try_from((kind, hint))?,
+              Some(ident) => Node {
+                ident,
+                kind: kind.kind,
+                tag: kind.tag,
+              },
+              None => Node::try_from((kind, None))?,
             })
           })
           .collect::<Result<_, Error>>()?,
@@ -133,13 +160,27 @@ impl<'a> ParsedAst<'a> {
 
   fn transform_choice(
     &'a self,
-    nodes: &'a [ParsedNodeKind<'a>],
+    nodes: &'a [ParsedTaggedNodeKind<'a>],
     inline: bool,
     hint: Option<Ident<'a>>,
   ) -> Result<(NodeKind<'a>, Option<Ident<'a>>), Error> {
     let nodes: Vec<_> = nodes
       .iter()
-      .map(|node| Ok(Node::try_from(self.transform_node_kind(node, None)?)?))
+      .map(|node_kind| {
+        Ok(Node::try_from(
+          self
+            .transform_node_kind(&node_kind.kind, None)
+            .map(|(untagged_kind, hint)| {
+              (
+                TaggedNodeKind {
+                  kind: untagged_kind,
+                  tag: node_kind.tag,
+                },
+                hint,
+              )
+            })?,
+        )?)
+      })
       .collect::<Result<_, Error>>()
       .map_err(|err| {
         err.context(format!(
@@ -280,21 +321,22 @@ impl Error {
   }
 }
 
-impl<'n> TryFrom<(NodeKind<'n>, Option<Ident<'n>>)> for Node<'n> {
+impl<'n> TryFrom<(TaggedNodeKind<'n>, Option<Ident<'n>>)> for Node<'n> {
   type Error = MissingName;
 
-  fn try_from((kind, hint): (NodeKind<'n>, Option<Ident<'n>>)) -> Result<Self, Self::Error> {
+  fn try_from((kind, hint): (TaggedNodeKind<'n>, Option<Ident<'n>>)) -> Result<Self, Self::Error> {
     match hint {
-      Some(ident) => Ok(Node { ident, kind }),
-      None => match kind {
+      Some(ident) => Ok(kind.add_name(ident.0)),
+      None => match kind.kind {
         NodeKind::Node(ident) | NodeKind::StaticToken(ident) | NodeKind::DynamicToken(ident) => {
-          Ok(Node { ident, kind })
+          Ok(kind.add_name(ident.0))
         }
         NodeKind::Group(ref group) => match &group.kind {
           GroupKind::Zero => Err(MissingName::new("failed to name zero sized group", &kind)),
           GroupKind::One(idx) => Ok(Node {
             ident: group.members.get(*idx).unwrap().ident,
-            kind,
+            kind: kind.kind,
+            tag: kind.tag,
           }),
           GroupKind::Many(_) => Err(MissingName::new("failed to name group", &kind)),
         },
@@ -310,17 +352,40 @@ impl<'n> TryFrom<(NodeKind<'n>, Option<Ident<'n>>)> for Node<'n> {
           inline: _,
         }) => Ok(Node {
           ident: primary.ident,
-          kind,
+          kind: kind.kind,
+          tag: kind.tag,
         }),
-        NodeKind::Delimited(inner, delimiter) => Node::try_from((*inner, hint)).map(|node| Node {
+        NodeKind::Delimited(inner, delimiter) => Node::try_from((
+          TaggedNodeKind {
+            kind: *inner,
+            tag: None,
+          },
+          hint,
+        ))
+        .map(|node| Node {
           ident: node.ident,
           kind: NodeKind::Delimited(Box::new(node.kind), delimiter),
+          tag: kind.tag,
         }),
-        NodeKind::Modified(inner, modifier) => Node::try_from((*inner, hint)).map(|node| Node {
+        NodeKind::Modified(inner, modifier) => Node::try_from((
+          TaggedNodeKind {
+            kind: *inner,
+            tag: None,
+          },
+          hint,
+        ))
+        .map(|node| Node {
           ident: node.ident,
           kind: NodeKind::Modified(Box::new(node.kind), modifier),
+          tag: kind.tag,
         }),
-        NodeKind::Todo => Node::try_from((NodeKind::Todo, Some(hint.unwrap_or(Ident("todo"))))),
+        NodeKind::Todo => Node::try_from((
+          TaggedNodeKind {
+            kind: NodeKind::Todo,
+            tag: kind.tag,
+          },
+          Some(hint.unwrap_or(Ident("todo"))),
+        )),
       },
     }
   }
@@ -331,7 +396,7 @@ impl<'n> TryFrom<(NodeKind<'n>, Option<Ident<'n>>)> for Node<'n> {
 pub struct MissingName(String);
 
 impl MissingName {
-  fn new<T: Display>(message: T, node: &NodeKind<'_>) -> Self {
+  fn new<T: Display>(message: T, node: &TaggedNodeKind<'_>) -> Self {
     Self(format!("{message}: {node}"))
   }
 }

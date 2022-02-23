@@ -17,6 +17,13 @@ pub struct Ast<'a> {
 pub struct Node<'a> {
   pub ident: Ident<'a>,
   pub kind: NodeKind<'a>,
+  pub tag: Option<Ident<'a>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TaggedNodeKind<'n> {
+  pub kind: NodeKind<'n>,
+  pub tag: Option<Ident<'n>>,
 }
 
 #[derive(Clone, Debug)]
@@ -60,6 +67,16 @@ pub enum ChoiceKind<'c> {
   },
 }
 
+impl Display for Node<'_> {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", self.kind)?;
+    if let Some(tag) = self.tag {
+      write!(f, ":{tag}")?;
+    }
+    Ok(())
+  }
+}
+
 impl<'a> Deref for Ast<'a> {
   type Target = NamedSet<'a, Node<'a>>;
 
@@ -69,7 +86,7 @@ impl<'a> Deref for Ast<'a> {
 }
 
 impl<'n> NamedItem<'n> for Node<'n> {
-  type Unnamed = NodeKind<'n>;
+  type Unnamed = TaggedNodeKind<'n>;
 
   fn name(&self) -> &'n str {
     self.ident.0
@@ -79,18 +96,30 @@ impl<'n> NamedItem<'n> for Node<'n> {
     Node {
       ident: Ident(name),
       kind: NodeKind::StaticToken(Ident("")),
+      tag: None,
     }
   }
 }
 
-impl<'n> Unnamed<'n> for NodeKind<'n> {
+impl<'n> Unnamed<'n> for TaggedNodeKind<'n> {
   type Named = Node<'n>;
 
   fn add_name(self, name: &'n str) -> Self::Named {
     Node {
       ident: Ident(name),
-      kind: self,
+      kind: self.kind,
+      tag: self.tag,
     }
+  }
+}
+
+impl Display for TaggedNodeKind<'_> {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", self.kind)?;
+    if let Some(tag) = self.tag {
+      write!(f, ":{tag}")?;
+    }
+    Ok(())
   }
 }
 
@@ -100,45 +129,46 @@ impl Display for NodeKind<'_> {
       NodeKind::Node(ident) | NodeKind::StaticToken(ident) | NodeKind::DynamicToken(ident) => {
         write!(f, "{ident}")
       }
-      NodeKind::Group(nodes) => write!(
-        f,
-        "{}",
-        nodes
-          .members
-          .iter()
-          .map(|child| match &child.kind {
-            NodeKind::Group(_) | NodeKind::Choice(_) => format!("({})", child.ident),
-            NodeKind::Node(_)
-            | NodeKind::StaticToken(_)
-            | NodeKind::DynamicToken(_)
-            | NodeKind::Delimited(..)
-            | NodeKind::Modified(..) => child.ident.to_string(),
-            NodeKind::Todo => String::from("!todo"),
-          })
-          .collect::<Vec<_>>()
-          .join(" ")
-      ),
+      NodeKind::Group(Group {
+        members,
+        kind: _,
+        inline,
+      }) => {
+        if *inline {
+          write!(f, "(")?;
+        }
+
+        let mut members = members.iter();
+        write!(f, "{}", members.next().unwrap())?;
+        for member in members {
+          write!(f, " {member}")?;
+        }
+
+        if *inline {
+          write!(f, ")")?;
+        }
+
+        Ok(())
+      }
       NodeKind::Choice(Choice {
         kind: ChoiceKind::Regular(choices),
-        inline: _,
+        inline,
       }) => {
-        write!(
-          f,
-          "{}",
-          choices
-            .iter()
-            .map(|child| match &child.kind {
-              NodeKind::Group(_) | NodeKind::Choice(_) => format!("({})", child.ident),
-              NodeKind::Node(_)
-              | NodeKind::StaticToken(_)
-              | NodeKind::DynamicToken(_)
-              | NodeKind::Delimited(..)
-              | NodeKind::Modified(..) => child.ident.to_string(),
-              NodeKind::Todo => String::from("!todo"),
-            })
-            .collect::<Vec<_>>()
-            .join(" | ")
-        )
+        if *inline {
+          write!(f, "(")?;
+        }
+
+        let mut choices = choices.iter();
+        write!(f, "{}", choices.next().unwrap())?;
+
+        if *inline {
+          write!(f, ")")?;
+        }
+        for choice in choices {
+          write!(f, " | {choice}")?;
+        }
+
+        Ok(())
       }
       NodeKind::Choice(Choice {
         kind: ChoiceKind::Option { primary, secondary },
@@ -147,15 +177,7 @@ impl Display for NodeKind<'_> {
         write!(f, "{} | {}", primary.ident, secondary.0)
       }
       NodeKind::Delimited(inner, delimiter) => write!(f, "delim[{delimiter}]<{inner}>"),
-      NodeKind::Modified(inner, modifier) => match inner.as_ref() {
-        NodeKind::Group(_) | NodeKind::Choice(_) => write!(f, "({inner}){modifier}"),
-        NodeKind::Node(_)
-        | NodeKind::StaticToken(_)
-        | NodeKind::DynamicToken(_)
-        | NodeKind::Delimited(..) => write!(f, "{inner}{modifier}"),
-        NodeKind::Modified(..) => unreachable!(),
-        NodeKind::Todo => write!(f, "!todo"),
-      },
+      NodeKind::Modified(inner, modifier) => write!(f, "{inner}{modifier}"),
       NodeKind::Todo => write!(f, "!todo"),
     }
   }

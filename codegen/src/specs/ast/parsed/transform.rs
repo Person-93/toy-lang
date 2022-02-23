@@ -1,9 +1,9 @@
 use super::{
   super::{
-    raw::{Ast as RawAst, NodeDef},
+    raw::{Ast as RawAst, NodeDef, NodeKindDef},
     Modifier, Specs,
   },
-  Ast, Ident, Node, NodeKind,
+  Ast, Ident, Node, NodeKind, TaggedNodeKind,
 };
 use std::{cell::RefCell, collections::hash_map::HashMap};
 use thiserror::Error;
@@ -16,10 +16,11 @@ impl<'a> RawAst<'a> {
         .iter()
         .map(|entry| -> Result<_, _> {
           validator
-            .validate_node_def(&entry.node_def)
+            .validate_node_def(&entry.node)
             .map(|node_def| Node {
               ident: entry.ident,
-              kind: node_from_def(node_def),
+              kind: node_from_def(node_def.kind),
+              tag: node_def.tag,
             })
         })
         .collect::<Result<_, _>>()?,
@@ -27,33 +28,45 @@ impl<'a> RawAst<'a> {
   }
 }
 
-fn node_from_def(node_def: ValidNodeDef) -> NodeKind {
-  match node_def {
-    ValidNodeDef::Node(ident) => NodeKind::Node(ident),
-    ValidNodeDef::Modified(inner, modifier) => {
-      NodeKind::Modified(Box::new(node_from_def(*inner)), modifier)
+fn node_from_def(node_def_kind: ValidNodeKind) -> NodeKind {
+  match node_def_kind {
+    ValidNodeKind::Node(ident) => NodeKind::Node(ident),
+    ValidNodeKind::Modified(inner, modifier) => {
+      NodeKind::Modified(Box::new(node_from_def(inner.kind)), modifier)
     }
-    ValidNodeDef::StaticToken(ident) => NodeKind::StaticToken(ident),
-    ValidNodeDef::DynamicToken(ident) => NodeKind::DynamicToken(ident),
-    ValidNodeDef::Group { nodes, inline } => NodeKind::Group {
-      nodes: (nodes.into_iter().map(node_from_def).collect::<Vec<_>>()),
+    ValidNodeKind::StaticToken(ident) => NodeKind::StaticToken(ident),
+    ValidNodeKind::DynamicToken(ident) => NodeKind::DynamicToken(ident),
+    ValidNodeKind::Group { nodes, inline } => NodeKind::Group {
+      nodes: (nodes
+        .into_iter()
+        .map(|node| TaggedNodeKind {
+          kind: node_from_def(node.kind),
+          tag: node.tag,
+        })
+        .collect::<Vec<_>>()),
       inline,
     },
-    ValidNodeDef::Choice { nodes, inline } => NodeKind::Choice {
-      nodes: nodes.into_iter().map(node_from_def).collect::<Vec<_>>(),
+    ValidNodeKind::Choice { nodes, inline } => NodeKind::Choice {
+      nodes: nodes
+        .into_iter()
+        .map(|node| TaggedNodeKind {
+          kind: node_from_def(node.kind),
+          tag: node.tag,
+        })
+        .collect::<Vec<_>>(),
       inline,
     },
-    ValidNodeDef::Delimited(inner, delimiter) => {
-      NodeKind::Delimited(Box::new(node_from_def(*inner)), delimiter)
+    ValidNodeKind::Delimited(inner, delimiter) => {
+      NodeKind::Delimited(Box::new(node_from_def(inner.kind)), delimiter)
     }
-    ValidNodeDef::Todo => NodeKind::Todo,
+    ValidNodeKind::Todo => NodeKind::Todo,
   }
 }
 
 struct Validator<'v, 'ast: 'v> {
   ast: &'v RawAst<'ast>,
   specs: &'v Specs<'ast>,
-  cache: RefCell<HashMap<&'v NodeDef<'ast>, ValidNodeDef<'ast>>>,
+  cache: RefCell<HashMap<&'v NodeKindDef<'ast>, ValidNodeKind<'ast>>>,
 }
 
 impl<'v, 'ast: 'v> Validator<'v, 'ast> {
@@ -68,54 +81,60 @@ impl<'v, 'ast: 'v> Validator<'v, 'ast> {
   fn validate_node_def<'r: 'v>(
     &'r self,
     node_def: &'v NodeDef<'ast>,
-  ) -> Result<ValidNodeDef<'ast>, Error> {
+  ) -> Result<ValidNode<'ast>, Error> {
     let cache = self.cache.borrow();
-    Ok(if let Some(valid_node_def) = cache.get(node_def) {
-      valid_node_def.clone()
-    } else {
-      drop(cache);
-      let valid_node = match node_def {
-        NodeDef::Simple(ident) => {
-          let ident = *ident;
-          if self.ast.get(&ident).is_some() {
-            ValidNodeDef::Node(ident)
-          } else if self.specs.static_tokens.contains(ident.0) {
-            ValidNodeDef::StaticToken(ident)
-          } else if self.specs.dynamic_tokens.contains(ident.0) {
-            ValidNodeDef::DynamicToken(ident)
-          } else {
-            return Err(Error::UnknownIdent(String::from(ident.0)));
+    Ok(ValidNode {
+      tag: node_def.tag,
+      kind: if let Some(valid_node_def) = cache.get(&node_def.kind) {
+        valid_node_def.clone()
+      } else {
+        drop(cache);
+        let valid_node = match &node_def.kind {
+          NodeKindDef::Simple(ident) => {
+            let ident = *ident;
+            if self.ast.get(&ident).is_some() {
+              ValidNodeKind::Node(ident)
+            } else if self.specs.static_tokens.contains(ident.0) {
+              ValidNodeKind::StaticToken(ident)
+            } else if self.specs.dynamic_tokens.contains(ident.0) {
+              ValidNodeKind::DynamicToken(ident)
+            } else {
+              return Err(Error::UnknownIdent(String::from(ident.0)));
+            }
           }
-        }
-        NodeDef::Modified(inner, modifier) => {
-          ValidNodeDef::Modified(Box::new(self.validate_node_def(inner)?), *modifier)
-        }
-        NodeDef::Delimiter(inner, delimiter) => {
-          if self.specs.delimiters.contains(delimiter.0) {
-            ValidNodeDef::Delimited(Box::new(self.validate_node_def(inner)?), *delimiter)
-          } else {
-            return Err(Error::UnknownDelim(String::from(delimiter.0)));
+          NodeKindDef::Modified(inner, modifier) => {
+            ValidNodeKind::Modified(Box::new(self.validate_node_def(inner)?), *modifier)
           }
-        }
-        NodeDef::Group { nodes, inline } => ValidNodeDef::Group {
-          nodes: nodes
-            .iter()
-            .map(|node| self.validate_node_def(node))
-            .collect::<Result<_, _>>()?,
-          inline: *inline,
-        },
-        NodeDef::Choice {
-          first,
-          second,
-          inline,
-        } => ValidNodeDef::Choice {
-          nodes: self.validate_choices(first, second, Vec::with_capacity(1))?,
-          inline: *inline,
-        },
-        NodeDef::Todo => ValidNodeDef::Todo,
-      };
-      self.cache.borrow_mut().insert(node_def, valid_node.clone());
-      valid_node
+          NodeKindDef::Delimiter(inner, delimiter) => {
+            if self.specs.delimiters.contains(delimiter.0) {
+              ValidNodeKind::Delimited(Box::new(self.validate_node_def(inner)?), *delimiter)
+            } else {
+              return Err(Error::UnknownDelim(String::from(delimiter.0)));
+            }
+          }
+          NodeKindDef::Group { nodes, inline } => ValidNodeKind::Group {
+            nodes: nodes
+              .iter()
+              .map(|node| self.validate_node_def(node))
+              .collect::<Result<_, _>>()?,
+            inline: *inline,
+          },
+          NodeKindDef::Choice {
+            first,
+            second,
+            inline,
+          } => ValidNodeKind::Choice {
+            nodes: self.validate_choices(first, second, Vec::with_capacity(1))?,
+            inline: *inline,
+          },
+          NodeKindDef::Todo => ValidNodeKind::Todo,
+        };
+        self
+          .cache
+          .borrow_mut()
+          .insert(&node_def.kind, valid_node.clone());
+        valid_node
+      },
     })
   }
 
@@ -123,17 +142,17 @@ impl<'v, 'ast: 'v> Validator<'v, 'ast> {
     &'r self,
     first: &'v NodeDef<'ast>,
     second: &'v NodeDef<'ast>,
-    mut processed: Vec<ValidNodeDef<'ast>>,
-  ) -> Result<Vec<ValidNodeDef<'ast>>, Error> {
+    mut processed: Vec<ValidNode<'ast>>,
+  ) -> Result<Vec<ValidNode<'ast>>, Error> {
     processed.push(self.validate_node_def(first)?);
-    match second {
-      NodeDef::Choice {
+    match &second.kind {
+      NodeKindDef::Choice {
         first,
         second,
         inline: _,
       } => self.validate_choices(first, second, processed),
-      node_def => {
-        processed.push(self.validate_node_def(node_def)?);
+      _ => {
+        processed.push(self.validate_node_def(second)?);
         Ok(processed)
       }
     }
@@ -141,20 +160,26 @@ impl<'v, 'ast: 'v> Validator<'v, 'ast> {
 }
 
 #[derive(Clone, Debug)]
-enum ValidNodeDef<'a> {
+struct ValidNode<'a> {
+  kind: ValidNodeKind<'a>,
+  tag: Option<Ident<'a>>,
+}
+
+#[derive(Clone, Debug)]
+enum ValidNodeKind<'a> {
   Node(Ident<'a>),
-  Modified(Box<ValidNodeDef<'a>>, Modifier),
+  Modified(Box<ValidNode<'a>>, Modifier),
   StaticToken(Ident<'a>),
   DynamicToken(Ident<'a>),
   Group {
-    nodes: Vec<ValidNodeDef<'a>>,
+    nodes: Vec<ValidNode<'a>>,
     inline: bool,
   },
   Choice {
-    nodes: Vec<ValidNodeDef<'a>>,
+    nodes: Vec<ValidNode<'a>>,
     inline: bool,
   },
-  Delimited(Box<ValidNodeDef<'a>>, Ident<'a>),
+  Delimited(Box<ValidNode<'a>>, Ident<'a>),
   Todo,
 }
 

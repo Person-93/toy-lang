@@ -10,7 +10,7 @@ use quote::{format_ident, quote, ToTokens};
 
 impl<'a> Ast<'a> {
   pub fn print(&self, specs: &Specs<'_>) -> TokenStream {
-    let nodes = self.iter().filter_map(|Node { ident, kind }| match kind {
+    let nodes = self.iter().filter_map(|node| match &node.kind {
       NodeKind::Node(_)
       | NodeKind::StaticToken(_)
       | NodeKind::DynamicToken(_)
@@ -31,12 +31,12 @@ impl<'a> Ast<'a> {
             .map(|idx| &members[idx])
             .filter_map(|node| {
               self.print_as_type(&node.kind, Some(node.ident)).map(|ty| {
-                let ident = node.ident;
+                let ident = node.tag.unwrap_or(node.ident);
                 quote! { pub #ident: #ty }
               })
             });
 
-          let ident = ident.as_type();
+          let ident = node.ident.as_type();
           Some(quote! { pub struct #ident { #(#members),* } })
         }
       },
@@ -96,7 +96,7 @@ impl<'a> Ast<'a> {
           quote! { #ty #body }
         });
 
-        let ident = format_ident!("{}", ident.to_pascal_case());
+        let ident = format_ident!("{}", node.ident.to_pascal_case());
         Some(quote! { pub enum #ident { #(#variants),* } })
       }
       NodeKind::Delimited(inner, _delimiter) => match &**inner {
@@ -114,12 +114,12 @@ impl<'a> Ast<'a> {
               .map(|idx| &members[idx])
               .filter_map(|node| {
                 self.print_as_type(&node.kind, Some(node.ident)).map(|ty| {
-                  let ident = node.ident;
+                  let ident = node.tag.unwrap_or(node.ident);
                   quote! { #ident: #ty }
                 })
               });
 
-            let ident = ident.as_type();
+            let ident = node.ident.as_type();
             Some(quote! { pub struct #ident { #(#members),* } })
           }
         },
@@ -391,7 +391,7 @@ impl<'a> Ast<'a> {
             .map(|node| {
               self
                 .print_as_type(&node.kind, Some(node.ident))
-                .map(|_| node.ident)
+                .map(|_| node.tag.unwrap_or(node.ident))
             })
             .enumerate()
             .filter_map(|(idx, ident)| ident.map(|ident| (idx, ident)))

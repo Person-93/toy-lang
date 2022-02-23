@@ -14,6 +14,13 @@ pub struct Ast<'a>(NamedSet<'a, Node<'a>>);
 pub struct Node<'n> {
   pub ident: Ident<'n>,
   pub kind: NodeKind<'n>,
+  pub tag: Option<Ident<'n>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TaggedNodeKind<'n> {
+  pub kind: NodeKind<'n>,
+  pub tag: Option<Ident<'n>>,
 }
 
 #[derive(Clone, Debug)]
@@ -22,11 +29,11 @@ pub enum NodeKind<'n> {
   StaticToken(Ident<'n>),
   DynamicToken(Ident<'n>),
   Group {
-    nodes: Vec<NodeKind<'n>>,
+    nodes: Vec<TaggedNodeKind<'n>>,
     inline: bool,
   },
   Choice {
-    nodes: Vec<NodeKind<'n>>,
+    nodes: Vec<TaggedNodeKind<'n>>,
     inline: bool,
   },
   Delimited(Box<NodeKind<'n>>, Ident<'n>),
@@ -60,6 +67,16 @@ impl Display for Node<'_> {
   }
 }
 
+impl Display for TaggedNodeKind<'_> {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", self.kind)?;
+    if let Some(tag) = self.tag {
+      write!(f, ":{}", tag)?;
+    }
+    Ok(())
+  }
+}
+
 impl Display for NodeKind<'_> {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     match self {
@@ -71,15 +88,7 @@ impl Display for NodeKind<'_> {
         "{}",
         nodes
           .iter()
-          .map(|child| match child {
-            NodeKind::Group { .. } | NodeKind::Choice { .. } => format!("({child})"),
-            NodeKind::Node(_)
-            | NodeKind::StaticToken(_)
-            | NodeKind::DynamicToken(_)
-            | NodeKind::Delimited(..)
-            | NodeKind::Modified(..) => child.to_string(),
-            NodeKind::Todo => String::from("!todo"),
-          })
+          .map(ToString::to_string)
           .collect::<Vec<_>>()
           .join(" ")
       ),
@@ -88,15 +97,7 @@ impl Display for NodeKind<'_> {
         "{}",
         nodes
           .iter()
-          .map(|child| match child {
-            NodeKind::Group { .. } | NodeKind::Choice { .. } => format!("({child})"),
-            NodeKind::Node(_)
-            | NodeKind::StaticToken(_)
-            | NodeKind::DynamicToken(_)
-            | NodeKind::Delimited(..)
-            | NodeKind::Modified(..) => child.to_string(),
-            NodeKind::Todo => String::from("!todo"),
-          })
+          .map(ToString::to_string)
           .collect::<Vec<_>>()
           .join(" | ")
       ),
@@ -116,7 +117,7 @@ impl Display for NodeKind<'_> {
 }
 
 impl<'n> NamedItem<'n> for Node<'n> {
-  type Unnamed = NodeKind<'n>;
+  type Unnamed = TaggedNodeKind<'n>;
 
   fn name(&self) -> &'n str {
     self.ident.0
@@ -126,17 +127,19 @@ impl<'n> NamedItem<'n> for Node<'n> {
     Node {
       ident: Ident(name),
       kind: NodeKind::Node(Ident("")),
+      tag: None,
     }
   }
 }
 
-impl<'n> Unnamed<'n> for NodeKind<'n> {
+impl<'n> Unnamed<'n> for TaggedNodeKind<'n> {
   type Named = Node<'n>;
 
   fn add_name(self, name: &'n str) -> Self::Named {
     Node {
       ident: Ident(name),
-      kind: self,
+      kind: self.kind,
+      tag: self.tag,
     }
   }
 }

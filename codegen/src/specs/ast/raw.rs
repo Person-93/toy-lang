@@ -1,9 +1,8 @@
 use super::{lex::Lexer, Ident, Modifier};
 use crate::collections::{NamedItem, NamedSet, Unnamed};
-use std::ops::DerefMut;
 use std::{
-  fmt::{Display, Formatter},
-  ops::{Deref, Range},
+  fmt::{self, Display, Formatter},
+  ops::{Deref, DerefMut, Range},
 };
 use thiserror::Error;
 
@@ -13,11 +12,17 @@ pub struct Ast<'a>(NamedSet<'a, Entry<'a>>);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Entry<'a> {
   pub ident: Ident<'a>,
-  pub node_def: NodeDef<'a>,
+  pub node: NodeDef<'a>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub enum NodeDef<'a> {
+pub struct NodeDef<'a> {
+  pub kind: NodeKindDef<'a>,
+  pub tag: Option<Ident<'a>>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub enum NodeKindDef<'a> {
   Simple(Ident<'a>),
   Modified(Box<NodeDef<'a>>, Modifier),
   Delimiter(Box<NodeDef<'a>>, Ident<'a>),
@@ -69,7 +74,7 @@ impl Ast<'_> {
       if !ast.insert(Entry::parse(line)?) {
         return Err(Error {
           text: String::from(line),
-          index: 0,
+          index: None,
           kind: ErrorKind::Duplicate,
         });
       }
@@ -83,24 +88,20 @@ impl Ast<'_> {
 
 impl Entry<'_> {
   fn parse(line: &str) -> Result<Entry, Error> {
-    let buffer = Lexer::new(line);
-    let node_type = Ident::parse(&buffer)?;
+    let lexer = Lexer::new(line);
+    let node_type = Ident::parse(&lexer)?;
 
-    buffer.skip_whitespace();
-    if !buffer.parse_literal("=") {
-      return Err(Error {
-        text: String::from(line),
-        index: 0,
-        kind: ErrorKind::MissingEquals,
-      });
+    lexer.skip_whitespace();
+    if !lexer.parse_literal("=") {
+      return Err(Error::with_full_text(&lexer, ErrorKind::MissingEquals));
     }
-    buffer.skip_whitespace();
+    lexer.skip_whitespace();
 
-    let node_def = NodeDef::parse(&buffer, false)?;
+    let node = NodeDef::parse(&lexer, false)?;
 
     Ok(Entry {
       ident: node_type,
-      node_def,
+      node,
     })
   }
 }
@@ -115,7 +116,10 @@ impl<'e> NamedItem<'e> for Entry<'e> {
   fn dummy(name: &'e str) -> Self {
     Entry {
       ident: Ident(name),
-      node_def: NodeDef::Simple(Ident("")),
+      node: NodeDef {
+        kind: NodeKindDef::Simple(Ident("")),
+        tag: None,
+      },
     }
   }
 }
@@ -126,7 +130,7 @@ impl<'e> Unnamed<'e> for NodeDef<'e> {
   fn add_name(self, name: &'e str) -> Self::Named {
     Entry {
       ident: Ident(name),
-      node_def: self,
+      node: self,
     }
   }
 }
@@ -134,60 +138,72 @@ impl<'e> Unnamed<'e> for NodeDef<'e> {
 impl NodeDef<'_> {
   fn parse<'p>(lexer: &Lexer<'p>, inline: bool) -> Result<NodeDef<'p>, Error> {
     let mut nodes = Vec::new();
-    while matches!(lexer.peek(), Some(c) if !IDENT_TERMINALS.contains(&c)) {
+    while matches!(lexer.peek(), Some(c) if !IDENT_TERMINALS.contains(c)) {
       if lexer.parse_literal("|") {
         lexer.skip_whitespace();
-        return Ok(NodeDef::Choice {
-          first: Box::new(NodeDef::from_vec(lexer, nodes, inline)?),
-          second: Box::new(NodeDef::parse(lexer, inline)?),
-          inline,
+        return Ok(NodeDef {
+          kind: NodeKindDef::Choice {
+            first: Box::new(NodeDef::from_vec(lexer, nodes, inline)?),
+            second: Box::new(NodeDef::parse(lexer, inline)?),
+            inline,
+          },
+          tag: parse_tag(lexer)?,
         });
       }
 
-      let mut def = if lexer.parse_literal("(") {
-        let node_def = NodeDef::parse(lexer, true)?;
+      let mut node = if lexer.parse_literal("(") {
+        let node = NodeDef::parse(lexer, true)?;
         if lexer.parse_literal(")") {
-          node_def
+          node
         } else {
-          return Err(Error {
-            text: String::from(lexer.text()),
-            index: lexer.index(),
-            kind: ErrorKind::MismatchedDelimiter,
-          });
+          return Err(Error::with_full_text(lexer, ErrorKind::MismatchedDelimiter));
         }
       } else if lexer.parse_literal("delim[") {
         let ident = Ident::parse(lexer)?;
 
         if !lexer.parse_literal("]<") {
-          return Err(Error {
-            text: String::from(ident.0),
-            index: lexer.index(),
-            kind: ErrorKind::MismatchedDelimiter,
-          });
+          return Err(Error::with_full_text(lexer, ErrorKind::MismatchedDelimiter));
         }
 
-        let node_def = NodeDef::parse(lexer, false)?;
+        let node = NodeDef::parse(lexer, false)?;
 
         if !lexer.parse_literal(">") {
-          return Err(Error {
-            text: String::from(lexer.extract().unwrap()),
-            index: lexer.index(),
-            kind: ErrorKind::MismatchedDelimiter,
-          });
+          return Err(Error::with_full_text(lexer, ErrorKind::MismatchedDelimiter));
         }
 
-        NodeDef::Delimiter(Box::new(node_def), ident)
+        NodeDef {
+          kind: NodeKindDef::Delimiter(Box::new(node), ident),
+          tag: None,
+        }
       } else if lexer.parse_literal("!todo") {
-        NodeDef::Todo
+        NodeDef {
+          kind: NodeKindDef::Todo,
+          tag: None,
+        }
       } else {
-        NodeDef::Simple(Ident::parse(lexer)?)
+        NodeDef {
+          kind: NodeKindDef::Simple(Ident::parse(lexer)?),
+          tag: None,
+        }
       };
 
       while let Some(modifier) = Modifier::parse(lexer) {
-        def = NodeDef::Modified(Box::new(def), modifier);
+        if node.tag.is_some() {
+          return Err(Error {
+            text: format!("{}{modifier}", node.kind),
+            index: Some(lexer.index()),
+            kind: ErrorKind::TagNotAllowed,
+          });
+        }
+        node = NodeDef {
+          kind: NodeKindDef::Modified(Box::new(node), modifier),
+          tag: None,
+        };
       }
 
-      nodes.push(def);
+      node.tag = parse_tag(lexer)?;
+
+      nodes.push(node);
 
       lexer.skip_whitespace();
     }
@@ -196,19 +212,31 @@ impl NodeDef<'_> {
   }
 
   fn from_vec<'a>(
-    buffer: &Lexer<'a>,
+    lexer: &Lexer<'a>,
     mut nodes: Vec<NodeDef<'a>>,
     inline: bool,
   ) -> Result<NodeDef<'a>, Error> {
     match nodes.len() {
-      0 => Err(Error {
-        text: String::from(buffer.text()),
-        index: buffer.index() - 1,
-        kind: ErrorKind::MissingNodeDef,
-      }),
+      0 => Err(Error::new(lexer, ErrorKind::MissingNodeDef)),
       1 => Ok(nodes.pop().unwrap()),
-      _ => Ok(NodeDef::Group { nodes, inline }),
+      _ => Ok(NodeDef {
+        kind: NodeKindDef::Group { nodes, inline },
+        tag: None,
+      }),
     }
+  }
+}
+
+fn parse_tag<'p>(lexer: &Lexer<'p>) -> Result<Option<Ident<'p>>, Error> {
+  if lexer.parse_literal(":") {
+    let ident = Ident::parse(lexer).map(Some)?;
+    if Modifier::parse(lexer).is_some() {
+      Err(Error::new(lexer, ErrorKind::TagNotAllowed))
+    } else {
+      Ok(ident)
+    }
+  } else {
+    Ok(None)
   }
 }
 
@@ -234,16 +262,11 @@ impl Modifier {
 
 impl Ident<'_> {
   fn parse<'p>(lexer: &Lexer<'p>) -> Result<Ident<'p>, Error> {
-    lexer.bump_while(|c| c.is_alphanumeric() || c == '_');
-    if lexer.peek().map_or(true, |c| IDENT_TERMINALS.contains(&c)) {
+    lexer.bump_while(|c| IDENT_CHARS.contains(c));
+    if lexer.peek().map_or(true, |c| IDENT_TERMINALS.contains(c)) {
       Ok(Ident(lexer.extract().unwrap()))
     } else {
-      lexer.bump_while(|c| c != ' ');
-      Err(Error {
-        text: String::from(lexer.extract().unwrap_or_else(|| lexer.text())),
-        index: lexer.index(),
-        kind: ErrorKind::InvalidIdent,
-      })
+      Err(Error::new(lexer, ErrorKind::InvalidIdent))
     }
   }
 }
@@ -269,7 +292,8 @@ impl<'a> Deref for Ident<'a> {
   }
 }
 
-const IDENT_TERMINALS: &[char] = &[' ', ',', '+', '*', '?', ')', ']', '>', '~'];
+const IDENT_TERMINALS: &str = " ,+*?)]>~:";
+const IDENT_CHARS: &str = "abcdefghijklmnopqurstuvwxyz_";
 
 struct LineRanges<'a> {
   text: &'a str,
@@ -303,11 +327,65 @@ impl Iterator for LineRanges<'_> {
   }
 }
 
+impl Display for NodeDef<'_> {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", self.kind)?;
+    if let Some(tag) = self.tag {
+      write!(f, ":{tag}")?;
+    }
+    Ok(())
+  }
+}
+
+impl Display for NodeKindDef<'_> {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    match self {
+      NodeKindDef::Simple(ident) => write!(f, "{ident}"),
+      NodeKindDef::Modified(inner, modifier) => write!(f, "{inner}{modifier}"),
+      NodeKindDef::Delimiter(inner, delimiter) => write!(f, "delim[{delimiter}<{inner}>"),
+      NodeKindDef::Group { nodes, inline } => {
+        if *inline {
+          write!(f, "(")?;
+        }
+
+        let mut nodes = nodes.iter();
+        let first = nodes.next().unwrap();
+        write!(f, "{first}")?;
+        for node in nodes {
+          write!(f, " {node}")?;
+        }
+
+        if *inline {
+          write!(f, ")")?;
+        }
+        Ok(())
+      }
+      NodeKindDef::Choice {
+        first,
+        second,
+        inline,
+      } => {
+        if *inline {
+          write!(f, "(")?;
+        }
+
+        write!(f, "{first}")?;
+        write!(f, " | {second}")?;
+
+        if *inline {
+          write!(f, ")")?;
+        }
+        Ok(())
+      }
+      NodeKindDef::Todo => write!(f, "!todo"),
+    }
+  }
+}
+
 #[derive(Clone, Debug, Error)]
-#[error("{kind}: {index}: {text}")]
 pub struct Error {
   text: String,
-  index: usize,
+  index: Option<usize>,
   kind: ErrorKind,
 }
 
@@ -318,6 +396,37 @@ enum ErrorKind {
   MissingEquals,
   MissingNodeDef,
   Duplicate,
+  TagNotAllowed,
+}
+
+impl Error {
+  fn new(lexer: &Lexer<'_>, kind: ErrorKind) -> Self {
+    lexer.bump_while(|c| c != ' ');
+    let (text, index) = match lexer.extract() {
+      Some(text) => (text, Some(lexer.index())),
+      None => (lexer.text(), None),
+    };
+    let text = String::from(text);
+    Self { text, index, kind }
+  }
+
+  fn with_full_text(lexer: &Lexer<'_>, kind: ErrorKind) -> Self {
+    Self {
+      text: String::from(lexer.text()),
+      index: None,
+      kind,
+    }
+  }
+}
+
+impl Display for Error {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}: ", self.kind)?;
+    if let Some(index) = self.index {
+      write!(f, "{index}: ")?;
+    }
+    write!(f, "{}", self.text)
+  }
 }
 
 impl Display for ErrorKind {
@@ -328,6 +437,7 @@ impl Display for ErrorKind {
       ErrorKind::MissingEquals => write!(f, "expected '='"),
       ErrorKind::MissingNodeDef => write!(f, "expected node definition"),
       ErrorKind::Duplicate => write!(f, "duplicate key"),
+      ErrorKind::TagNotAllowed => write!(f, "tags should be after modifiers"),
     }
   }
 }
