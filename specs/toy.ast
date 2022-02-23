@@ -9,19 +9,18 @@ item = function | struct | enum | trait | type_alias
 
 # The last element is only allowed to be a semi if the extern
 # block is present.
-function = extern? kw_fn ident args return_type? ((colon expr) | semi)
-extern = kw_extern str_lit
-return_type = returns type
-args = delim[paren]<annotated_ident,*>
+function = (kw_extern str_lit)?:extern kw_fn ident \
+           delim[paren]<annotated_ident,*>:args \
+           (returns type)?:return_type ((colon expr) | semi):body
 
-struct = kw_struct ident generics? delim[brace]<struct_body>
+struct = kw_struct ident generics? delim[brace]<struct_body>:fields
 struct_body = named_struct | tuple_struct | unit_struct
 named_struct = delim[brace]<struct_member*>
 struct_member = vis? annotated_ident semi
 tuple_struct = delim[brace]<type,*>
 unit_struct = semi
 
-enum = kw_enum ident generics? delim[brace]<(variant semi)*>
+enum = kw_enum ident generics? delim[brace]<(variant semi)*>:variants
 variant = struct_variant | tuple_variant | unit_variant
 struct_variant = delim[brace]<(annotated_ident semi)*>
 
