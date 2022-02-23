@@ -95,10 +95,15 @@ impl Specs<'_> {
   }
 
   pub fn generate_tokens_mod(&self) -> Result<TokenStream> {
-    let mut tokens = self.generate_tokens_enum();
-    tokens.extend(self.generate_tokens_fmt());
-    tokens.extend(self.generate_tokens_parse());
-    Ok(tokens)
+    let enum_ = self.generate_tokens_enum();
+    let fmt = self.generate_tokens_fmt();
+    let parse = self.generate_tokens_parse();
+    Ok(quote! {
+      #![allow(dead_code)]
+      #enum_
+      #fmt
+      #parse
+    })
   }
 
   pub fn generate_ast_mod(&self) -> Result<TokenStream> {

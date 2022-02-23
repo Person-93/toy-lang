@@ -167,4 +167,5 @@ trait TokenBase: Debug + Display + Clone + Eq + PartialEq + Serialize {}
 #[cfg(test)]
 impl<T> TokenBase for T where T: Debug + Display + Clone + Eq + PartialEq + Serialize {}
 
+#[allow(dead_code)]
 pub type Error = chumsky::error::Simple<Token>;

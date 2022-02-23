@@ -135,6 +135,8 @@ impl<'a> Ast<'a> {
     let parsers = self.nodes.iter().map(|node| self.print_parser(node, specs));
 
     quote! {
+      #![allow(dead_code)]
+
       use super::super::tokens;
       #(#nodes)*
 
