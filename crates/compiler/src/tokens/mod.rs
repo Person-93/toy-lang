@@ -2,27 +2,12 @@ pub use self::generated::*;
 use logos::Lexer;
 #[cfg(test)]
 use serde::Serialize;
-use std::{
-  convert::Infallible,
-  fmt::{Debug, Display},
-  num::ParseIntError,
-};
+use std::num::ParseIntError;
 
 mod fmt;
 mod generated;
 #[cfg(test)]
 mod tests;
-
-pub trait StaticToken: Copy + Default + TokenBase {
-  fn name() -> &'static str;
-  fn symbol() -> &'static str;
-}
-
-pub trait DynamicToken: TokenBase {
-  type Error;
-
-  fn new(lex: &mut Lexer<Token>) -> Result<Self, Self::Error>;
-}
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(test, derive(Serialize))]
@@ -60,26 +45,20 @@ enum NumLitType {
   Float,
 }
 
-impl DynamicToken for StrLit {
-  type Error = Infallible;
-
-  fn new(lex: &mut Lexer<Token>) -> Result<Self, Self::Error> {
-    Ok(StrLit(String::from(lex.slice())))
+impl StrLit {
+  fn new(lex: &mut Lexer<Token>) -> Self {
+    StrLit(String::from(lex.slice()))
   }
 }
 
-impl DynamicToken for Ident {
-  type Error = Infallible;
-
-  fn new(lex: &mut Lexer<Token>) -> Result<Self, Self::Error> {
-    Ok(Ident(String::from(lex.slice())))
+impl Ident {
+  fn new(lex: &mut Lexer<Token>) -> Self {
+    Ident(String::from(lex.slice()))
   }
 }
 
-impl DynamicToken for NumLit {
-  type Error = NumLitErr;
-
-  fn new(lex: &mut Lexer<Token>) -> Result<Self, Self::Error> {
+impl NumLit {
+  fn new(lex: &mut Lexer<Token>) -> Result<Self, NumLitErr> {
     let slice = lex.slice();
 
     let prefix = if slice[0..=0] != *"0" {
@@ -152,20 +131,6 @@ impl From<ParseIntError> for NumLitErr {
     NumLitErr::ParseInt(err)
   }
 }
-
-#[cfg(not(test))]
-#[allow(private_in_public)]
-trait TokenBase: Debug + Display + Clone + Eq + PartialEq {}
-
-#[cfg(not(test))]
-impl<T> TokenBase for T where T: Debug + Display + Clone + Eq + PartialEq {}
-
-#[cfg(test)]
-#[allow(private_in_public)]
-trait TokenBase: Debug + Display + Clone + Eq + PartialEq + Serialize {}
-
-#[cfg(test)]
-impl<T> TokenBase for T where T: Debug + Display + Clone + Eq + PartialEq + Serialize {}
 
 #[allow(dead_code)]
 pub type Error = chumsky::error::Simple<Token>;

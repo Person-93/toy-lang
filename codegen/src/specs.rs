@@ -64,7 +64,7 @@ impl Specs<'_> {
       let name = token.0.as_type();
       let pattern = token.1;
       quote! {
-        #[regex(#pattern, |lex| super::DynamicToken::new(lex))]
+        #[regex(#pattern, super::#name::new)]
         #name(super::#name)
       }
     });
