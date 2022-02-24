@@ -4,9 +4,24 @@ version = 3
 
 [[package]]
 name = "anyhow"
-version = "1.0.53"
+version = "1.0.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94a45b455c14666b85fc40a019e8ab9eb75e3a124e05494f5397122bc9eb06e0"
+checksum = "159bb86af3a200e19a068f4224eae4c8bb2d0fa054c7e5d1cacd5cef95e684cd"
+
+[[package]]
+name = "ast-description-lang"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33533f7a7e1d83df59cd2fcf8e7dadc2932d32c444bd532025588118ebcb9051"
+dependencies = [
+ "anyhow",
+ "heck",
+ "indexmap",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "thiserror",
+]
 
 [[package]]
 name = "autocfg"
@@ -34,13 +49,8 @@ checksum = "282a6247722caba404c065016bbfa522806e51714c34f5dfc3e4a3a46fcb4223"
 dependencies = [
  "autocfg",
  "hashbrown",
+ "serde",
 ]
-
-[[package]]
-name = "nullable-result"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "655c9e354a7e9dda520befe8d617323b3479a4c99ab6530d62ba1be5e946b999"
 
 [[package]]
 name = "proc-macro2"
@@ -125,26 +135,12 @@ name = "toy-lang-codegen"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "heck",
+ "ast-description-lang",
  "indexmap",
  "proc-macro2",
  "quote",
  "serde",
- "thiserror",
  "toml",
- "type_utils",
-]
-
-[[package]]
-name = "type_utils"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16a47b3fccc90eb038ed797282ac5609483befa98e9f41945e80c089168fd4b0"
-dependencies = [
- "nullable-result",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

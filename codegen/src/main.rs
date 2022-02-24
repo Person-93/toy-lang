@@ -3,7 +3,6 @@ use anyhow::Result;
 use proc_macro2::TokenStream;
 use std::path::Path;
 
-mod collections;
 mod specs;
 
 fn main() -> Result<()> {
@@ -11,10 +10,6 @@ fn main() -> Result<()> {
     Rule {
       name: "tokens",
       func: Specs::generate_tokens_mod,
-    },
-    Rule {
-      name: "keywords",
-      func: Specs::generate_keywords_mod,
     },
     Rule {
       name: "ast",
