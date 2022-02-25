@@ -1,7 +1,11 @@
 use crate::specs::Specs;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use proc_macro2::TokenStream;
-use std::path::Path;
+use std::{
+  io::{self, Write},
+  path::Path,
+  process::{Command, Stdio},
+};
 
 mod specs;
 
@@ -38,7 +42,36 @@ impl<'r, 's> Rule<'r, 's> {
       .join(name)
       .join("generated.rs");
 
-    std::fs::write(name, func(specs)?.to_string())?;
+    let contents = func(specs)?.to_string();
+    let rustfmt = Command::new("rustfmt")
+      .stdin(Stdio::piped())
+      .stdout(Stdio::piped())
+      .stderr(Stdio::piped())
+      .spawn()
+      .context("failed to start rustfmt")?;
+    rustfmt
+      .stdin
+      .as_ref()
+      .unwrap()
+      .write_all(contents.as_bytes())
+      .context("failed to write generated code to rustfmt")?;
+    let output = rustfmt
+      .wait_with_output()
+      .context("failed waiting for rustfmt")?;
+
+    let output = if output.status.success() {
+      &output.stdout
+    } else {
+      let cerr = io::stderr();
+      let mut cerr = cerr.lock();
+      cerr
+        .write_fmt(format_args!("rustfmt exited with {}\n", output.status))
+        .unwrap();
+      cerr.write_all(&output.stderr).unwrap();
+      contents.as_bytes()
+    };
+
+    std::fs::write(name, output)?;
 
     Ok(())
   }
