@@ -8,7 +8,10 @@ use std::fs;
 #[test]
 fn snapshot() {
   glob!("toys/*.toy", |file| {
-    let text = fs::read_to_string(file).unwrap();
+    let text = fs::read_to_string(file)
+      .unwrap()
+      // strip '\r' so snapshots match on windows
+      .replace('\r', "");
     assert_snapshot!(Token::lexer(&text)
       .spanned()
       .map(|(token, span)| Output(token, span.clone(), &text[span]).to_string())
