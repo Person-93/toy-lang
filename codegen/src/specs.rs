@@ -1,5 +1,5 @@
 use anyhow::Result;
-use ast_description_lang::{Delimiter, Ident, NamedSet};
+use ast_description_lang::{Config, Delimiter, Ident, NamedSet};
 use indexmap::IndexMap;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -56,7 +56,9 @@ impl Specs<'_> {
   }
 
   pub fn generate_ast_mod(&self) -> Result<TokenStream> {
-    ast_description_lang::generate(&fs::read_to_string("specs/toy.ast")?, self)
+    let mut config = Config::default();
+    config.error = "crate::error::ParseError";
+    ast_description_lang::generate(&fs::read_to_string("specs/toy.ast")?, self, config)
   }
 
   fn generate_tokens_enum(&self) -> TokenStream {
@@ -138,7 +140,10 @@ impl Specs<'_> {
     quote! {
       pub mod parse {
         use chumsky::prelude::*;
-        use super::{super::Error, Token};
+        use super::Token;
+
+        type Error = crate::error::ParseError;
+
         #(#static_tokens)*
         #(#dynamic_tokens)*
       }

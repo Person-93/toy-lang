@@ -131,6 +131,3 @@ impl From<ParseIntError> for NumLitErr {
     NumLitErr::ParseInt(err)
   }
 }
-
-#[allow(dead_code)]
-pub type Error = chumsky::error::Simple<Token>;
