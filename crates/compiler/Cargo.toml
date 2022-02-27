@@ -11,5 +11,6 @@ chumsky = "0.8.0"
 logos = "0.12.0"
 
 [dev-dependencies]
-insta = { version = "1.12.0", features = ["glob", "redactions", "ron"] }
+anyhow = "1.0.55"
+insta = "1.12.0"
 serde = { version = "1.0.136", features = ["derive"] }
