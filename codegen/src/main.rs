@@ -1,5 +1,6 @@
 use crate::specs::Specs;
 use anyhow::{Context, Result};
+use ast_description_lang::Config;
 use proc_macro2::TokenStream;
 use std::{
   io::{self, Write},
@@ -24,25 +25,30 @@ fn main() -> Result<()> {
   let specs = std::fs::read_to_string("specs/specs.toml")?;
   let specs: specs::Specs = toml::de::from_str(&specs)?;
 
-  rules.into_iter().try_for_each(|rule| rule.run(&specs))?;
+  let mut config = Config::default();
+  config.error = "crate::error::ParseError";
+
+  rules
+    .into_iter()
+    .try_for_each(|rule| rule.run(&specs, &config))?;
 
   Ok(())
 }
 
 struct Rule<'r, 's> {
   name: &'static str,
-  func: fn(&'r Specs<'s>) -> Result<TokenStream>,
+  func: fn(&'r Specs<'s>, &'r Config<'s>) -> Result<TokenStream>,
 }
 
 impl<'r, 's> Rule<'r, 's> {
-  fn run(self, specs: &'r Specs<'s>) -> Result<()> {
+  fn run(self, specs: &'r Specs<'s>, config: &'r Config<'s>) -> Result<()> {
     let Self { name, func } = self;
 
     let name = Path::new("./crates/compiler/src/")
       .join(name)
       .join("generated.rs");
 
-    let contents = func(specs)?.to_string();
+    let contents = func(specs, config)?.to_string();
     let rustfmt = Command::new("rustfmt")
       .stdin(Stdio::piped())
       .stdout(Stdio::piped())
