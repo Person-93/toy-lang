@@ -18,7 +18,7 @@ greater_than = { symbol = "greater_than", precedence = 5 }
 greater_than_equal = { symbol = "greater_than_equal", precedence = 5 }
 
 #bitwise
-bit_and = { symbol = "ampersend", precedence = 9 }
+bit_and = { symbol = "ampersand", precedence = 9 }
 bit_and_assign = { symbol = "bit_and_assign", precedence = 1 }
 bit_or = { symbol = "bit_or", precedence = 7 }
 bit_or_assign = { symbol = "bit_or_assign", precedence = 1 }
@@ -50,7 +50,7 @@ member_access = { symbol = "dot", precedence = 14 }
 
 
 [prefix_operators]
-borrow = "ampersend"
+borrow = "ampersand"
 deref = "star"
 not = "kw_not"
 neg = "minus"
@@ -72,7 +72,7 @@ generics = { open = "turbofish", close = "greater_than" }
 [static_tokens]
 add = "+"
 add_assign = "+="
-ampersend = "&"
+ampersand = "&"
 assign = ":="
 bit_and_assign = "&="
 bit_or = "|"
