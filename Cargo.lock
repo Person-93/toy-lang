@@ -319,7 +319,6 @@ dependencies = [
  "chumsky",
  "insta",
  "logos",
- "serde",
 ]
 
 [[package]]

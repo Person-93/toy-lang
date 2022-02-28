@@ -1,7 +1,5 @@
 pub use self::generated::*;
 use logos::Lexer;
-#[cfg(test)]
-use serde::Serialize;
 use std::num::ParseIntError;
 
 mod fmt;
@@ -10,19 +8,15 @@ mod generated;
 mod tests;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(test, derive(Serialize))]
 pub struct Ident(String);
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(test, derive(Serialize))]
 pub struct StrLit(String);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(test, derive(Serialize))]
 pub struct BoolLit(bool);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(test, derive(Serialize))]
 pub struct NumLit {
   prefix: Option<NumLitPrefix>,
   val: i64,
@@ -31,14 +25,12 @@ pub struct NumLit {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(test, derive(Serialize))]
 enum NumLitPrefix {
   Binary,
   Hex,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(test, derive(Serialize))]
 enum NumLitType {
   Int,
   Unsigned,
