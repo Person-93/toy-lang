@@ -1,38 +1,41 @@
 ---
 source: crates/syntax/src/tokens/tests.rs
-assertion_line: 12
+assertion_line: 34
 expression: "Token::lexer(&text).spanned().map(|(token, span)|\n                                      Output(token, span.clone(),\n                                             &text[span]).to_string()).collect::<Vec<_>>().join(\"\\n\")"
 
 ---
 KwExtern @ 0..6
-KwFn @ 7..9
-Ident @ 10..16: answer
-LeftParen @ 16..17
-RightParen @ 17..18
-Returns @ 19..21
-Ident @ 22..24: i8
-Colon @ 24..25
-LeftBrace @ 26..27
-NumLit @ 28..30: 42
-RightBrace @ 31..32
-KwExtern @ 34..40
-KwFn @ 41..43
-Ident @ 44..48: ping
-LeftParen @ 48..49
-RightParen @ 49..50
-Returns @ 51..53
-Ident @ 54..59: usize
-Colon @ 59..60
-LeftBrace @ 61..62
-Ident @ 63..67: ping
-LeftParen @ 67..68
-RightParen @ 68..69
-RightBrace @ 70..71
-KwExtern @ 73..79
-KwFn @ 80..82
-Ident @ 83..87: pong
-LeftParen @ 87..88
-RightParen @ 88..89
-Returns @ 90..92
-Ident @ 93..98: usize
-Semi @ 98..99
+StrLit @ 7..10: "C"
+KwFn @ 11..13
+Ident @ 14..20: answer
+LeftParen @ 20..21
+RightParen @ 21..22
+Returns @ 23..25
+Ident @ 26..28: i8
+Colon @ 28..29
+LeftBrace @ 30..31
+NumLit @ 32..34: 42
+RightBrace @ 35..36
+KwExtern @ 38..44
+StrLit @ 45..48: "C"
+KwFn @ 49..51
+Ident @ 52..56: ping
+LeftParen @ 56..57
+RightParen @ 57..58
+Returns @ 59..61
+Ident @ 62..67: usize
+Colon @ 67..68
+LeftBrace @ 69..70
+Ident @ 71..75: ping
+LeftParen @ 75..76
+RightParen @ 76..77
+RightBrace @ 78..79
+KwExtern @ 81..87
+StrLit @ 88..91: "C"
+KwFn @ 92..94
+Ident @ 95..99: pong
+LeftParen @ 99..100
+RightParen @ 100..101
+Returns @ 102..104
+Ident @ 105..110: usize
+Semi @ 110..111

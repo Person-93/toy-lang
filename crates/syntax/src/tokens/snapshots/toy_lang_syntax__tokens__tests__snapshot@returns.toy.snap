@@ -12,16 +12,14 @@ Returns @ 16..18
 Ampersand @ 19..20
 Ident @ 20..23: str
 Colon @ 23..24
-LeftBrace @ 25..26
-StrLit @ 27..40: "hello world"
-RightBrace @ 41..42
-KwFn @ 44..46
-Ident @ 47..57: return_num
-LeftParen @ 57..58
-RightParen @ 58..59
-Returns @ 60..62
-Ident @ 63..65: i8
-Colon @ 65..66
-LeftBrace @ 67..68
-NumLit @ 69..71: 42
-RightBrace @ 72..73
+StrLit @ 25..38: "hello world"
+KwFn @ 40..42
+Ident @ 43..53: return_num
+LeftParen @ 53..54
+RightParen @ 54..55
+Returns @ 56..58
+Ident @ 59..61: i8
+Colon @ 61..62
+LeftBrace @ 63..64
+NumLit @ 65..67: 42
+RightBrace @ 68..69

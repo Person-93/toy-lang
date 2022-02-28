@@ -1,5 +1,5 @@
-extern fn answer() -> i8: { 42 }
+extern "C" fn answer() -> i8: { 42 }
 
-extern fn ping() -> usize: { ping() }
+extern "C" fn ping() -> usize: { ping() }
 
-extern fn pong() -> usize;
+extern "C" fn pong() -> usize;
