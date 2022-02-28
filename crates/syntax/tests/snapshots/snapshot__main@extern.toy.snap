@@ -13,7 +13,7 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery_verbose(Stream::
                     Function {
                         extern_: Some(
                             StrLit(
-                                "\"C\"",
+                                "C",
                             ),
                         ),
                         ident: Ident(
@@ -60,7 +60,7 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery_verbose(Stream::
                     Function {
                         extern_: Some(
                             StrLit(
-                                "\"C\"",
+                                "C",
                             ),
                         ),
                         ident: Ident(
@@ -106,7 +106,7 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery_verbose(Stream::
                     Function {
                         extern_: Some(
                             StrLit(
-                                "\"C\"",
+                                "C",
                             ),
                         ),
                         ident: Ident(

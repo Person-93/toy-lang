@@ -30,7 +30,7 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery_verbose(Stream::
                             Expr {
                                 primary: StrLit(
                                     StrLit(
-                                        "\"hello world\"",
+                                        "hello world",
                                     ),
                                 ),
                                 args: None,

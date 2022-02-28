@@ -47,7 +47,9 @@ enum NumLitType {
 
 impl StrLit {
   fn new(lex: &mut Lexer<Token>) -> Self {
-    StrLit(String::from(lex.slice()))
+    let slice = lex.slice();
+    let slice = &slice[1..lex.slice().len() - 1];
+    StrLit(String::from(slice))
   }
 }
 
