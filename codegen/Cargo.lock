@@ -10,9 +10,9 @@ checksum = "159bb86af3a200e19a068f4224eae4c8bb2d0fa054c7e5d1cacd5cef95e684cd"
 
 [[package]]
 name = "ast-description-lang"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9956d984824644892e5e338ddcbf3d9545184fcf4a7a6366e53fc66e46758c10"
+checksum = "02b4360fe6c8f8fe85906a7871c6990c6722831ad162d7e3bb890b6ae3bcea39"
 dependencies = [
  "anyhow",
  "heck",
