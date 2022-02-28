@@ -5,5 +5,5 @@
 /codegen/target
 
 # generated files
-/crates/compiler/src/**/generated.rs
+/crates/syntax/src/**/generated.rs
 tmp.rs

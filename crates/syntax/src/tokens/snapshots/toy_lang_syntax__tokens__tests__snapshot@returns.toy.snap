@@ -1,8 +1,7 @@
 ---
-source: crates/compiler/src/tokens/tests.rs
-assertion_line: 12
+source: crates/syntax/src/tokens/tests.rs
+assertion_line: 34
 expression: "Token::lexer(&text).spanned().map(|(token, span)|\n                                      Output(token, span.clone(),\n                                             &text[span]).to_string()).collect::<Vec<_>>().join(\"\\n\")"
-input_file: toys/returns.toy
 
 ---
 KwFn @ 0..2
@@ -10,7 +9,7 @@ Ident @ 3..13: return_str
 LeftParen @ 13..14
 RightParen @ 14..15
 Returns @ 16..18
-Ampersend @ 19..20
+Ampersand @ 19..20
 Ident @ 20..23: str
 Colon @ 23..24
 LeftBrace @ 25..26

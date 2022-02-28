@@ -1,8 +1,17 @@
 [package]
-name = "toy-lang-compiler"
+name = "toy-lang-syntax"
 authors = ["person93 <person93.person93@gmail.com>"]
 version = "0.1.0-dev"
 edition = "2021"
 description = "A toy programming language to play around with"
 license = "MIT OR APACHE"
 publish = false
+
+[dependencies]
+chumsky = "0.8.0"
+logos = "0.12.0"
+
+[dev-dependencies]
+anyhow = "1.0.55"
+insta = "1.12.0"
+serde = { version = "1.0.136", features = ["derive"] }

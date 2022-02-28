@@ -310,6 +310,10 @@ dependencies = [
 [[package]]
 name = "toy-lang-compiler"
 version = "0.1.0-dev"
+
+[[package]]
+name = "toy-lang-syntax"
+version = "0.1.0-dev"
 dependencies = [
  "anyhow",
  "chumsky",
