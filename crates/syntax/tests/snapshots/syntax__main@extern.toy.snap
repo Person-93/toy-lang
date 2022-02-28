@@ -1,7 +1,7 @@
 ---
-source: crates/syntax/tests/snapshot.rs
-assertion_line: 31
-expression: "toy_lang_syntax::ast::parse::file().parse_recovery_verbose(Stream::from_iter(text.len()..text.len(),\n                                                                             tokens))"
+source: crates/syntax/tests/syntax.rs
+assertion_line: 10
+expression: "toy_lang_syntax::ast::parse::file().parse_recovery(Stream::from_iter(text.len()..text.len(),\n                                                                     tokens))"
 
 ---
 (

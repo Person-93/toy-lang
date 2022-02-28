@@ -1,6 +1,6 @@
 ---
-source: crates/syntax/src/tokens/tests.rs
-assertion_line: 34
+source: crates/syntax/tests/tokens.rs
+assertion_line: 9
 expression: "Token::lexer(&text).spanned().map(|(token, span)|\n                                      Output(token, span.clone(),\n                                             &text[span]).to_string()).collect::<Vec<_>>().join(\"\\n\")"
 
 ---

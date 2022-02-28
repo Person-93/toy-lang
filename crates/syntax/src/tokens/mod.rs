@@ -1,11 +1,9 @@
 pub use self::generated::*;
 use logos::Lexer;
-use std::num::ParseIntError;
+use std::{num::ParseIntError, ops::Deref};
 
 mod fmt;
 mod generated;
-#[cfg(test)]
-mod tests;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Ident(String);
@@ -15,20 +13,20 @@ pub struct StrLit(String);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct NumLit {
-  prefix: Option<NumLitPrefix>,
-  val: i64,
-  decimal: Option<u64>,
-  ty: Option<NumLitType>,
+  pub prefix: Option<NumLitPrefix>,
+  pub val: i64,
+  pub decimal: Option<u64>,
+  pub ty: Option<NumLitType>,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-enum NumLitPrefix {
+pub enum NumLitPrefix {
   Binary,
   Hex,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-enum NumLitType {
+pub enum NumLitType {
   Int,
   Unsigned,
   Float,
@@ -40,11 +38,31 @@ impl StrLit {
     let slice = &slice[1..lex.slice().len() - 1];
     StrLit(String::from(slice))
   }
+
+  pub fn take(self) -> String {
+    self.0
+  }
 }
 
 impl Ident {
   fn new(lex: &mut Lexer<Token>) -> Self {
     Ident(String::from(lex.slice()))
+  }
+}
+
+impl AsRef<str> for Ident {
+  #[inline]
+  fn as_ref(&self) -> &str {
+    &*self
+  }
+}
+
+impl Deref for Ident {
+  type Target = str;
+
+  #[inline]
+  fn deref(&self) -> &Self::Target {
+    &self.0
   }
 }
 

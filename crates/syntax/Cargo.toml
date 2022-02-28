@@ -13,9 +13,14 @@ logos = "0.12.0"
 
 [dev-dependencies]
 anyhow = "1.0.55"
-insta = "1.12.0"
+test-util = { path = "../test-util" }
 
 [[test]]
-name = "snapshot"
-path = "tests/snapshot.rs"
+name = "tokens"
+path = "tests/tokens.rs"
+harness = false
+
+[[test]]
+name = "syntax"
+path = "tests/syntax.rs"
 harness = false

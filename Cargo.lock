@@ -299,6 +299,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-util"
+version = "0.1.0-dev"
+dependencies = [
+ "anyhow",
+ "insta",
+]
+
+[[package]]
 name = "tiny-keccak"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -317,8 +325,8 @@ version = "0.1.0-dev"
 dependencies = [
  "anyhow",
  "chumsky",
- "insta",
  "logos",
+ "test-util",
 ]
 
 [[package]]
