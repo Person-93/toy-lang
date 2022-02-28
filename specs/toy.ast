@@ -3,38 +3,51 @@
 # lines ending with '\' are concatenated with the next line
 # BNF for the entries are in ast.bnf
 
-file = top_level*
+file = top_level* EOF
 top_level = vis? item
 item = function | struct | enum | trait | type_alias
 
 # The last element is only allowed to be a semi if the extern
 # block is present.
-function = (kw_extern str_lit)?:extern kw_fn ident \
-           delim[paren]<annotated_ident,*>:args \
+function = (kw_extern str_lit)?:extern kw_fn ident generic_params? \
+           delim[paren]<annotated_ident,*>:params \
            (returns type)?:return_type ((colon expr) | semi):body
 
-struct = kw_struct ident generics? delim[brace]<struct_body>:fields
+struct = kw_struct ident generic_params? delim[brace]<struct_body>:fields
 struct_body = named_struct | tuple_struct | unit_struct
 named_struct = delim[brace]<struct_member*>
 struct_member = vis? annotated_ident semi
-tuple_struct = delim[brace]<type,*>
+tuple_struct = delim[brace]<tuple_member,*>
+tuple_member = vis? type
 unit_struct = semi
 
-enum = kw_enum ident generics? delim[brace]<(variant semi)*>:variants
-variant = struct_variant | tuple_variant | unit_variant
+enum = kw_enum ident generic_params? delim[brace]<(variant semi)*>:variants
+variant = ident variant_kind:kind
+variant_kind = struct_variant:struct | tuple_variant:tuple | unit_variant:unit
 struct_variant = delim[brace]<(annotated_ident semi)*>
+tuple_variant = delim[paren]<type,*>
+unit_variant = semi
 
-generics = delim[generics]<type,*>
+generic_params = delim[generics]<generic_param,*>
+generic_param = const_param | ident
+const_param = kw_const ident colon type
+generics_args = delim[generics]<type,*>
 
-annotated_ident = ident semi type
+annotated_ident = ident colon type
 
-expr = code_block | statement~ | ident
+expr = expr_fragment:primary delim[paren]<expr,*>?:args
+expr_fragment = code_block | ident | str_lit | num_lit
 code_block = delim[brace]<statement* expr~?>
 statement = expr semi
 
-type = !todo
-trait = !todo
-type_alias = !todo
-vis = !todo
-tuple_variant = !todo
-unit_variant = !todo
+vis = kw_pub delim[paren]<vis_kind>?
+vis_kind = kw_super | kw_package
+
+type = ident | (ampersand type)~:ref
+
+type_alias = kw_type ident generic_params? equals type semi
+
+trait = kw_trait ident generic_params? delim[brace]<trait_item*>:items
+trait_item = function | associated_type | associated_const
+associated_type = kw_type ident (equals type)?:default semi
+associated_const = kw_const ident colon type (equals expr)?:default
