@@ -13,12 +13,6 @@ impl Display for super::StrLit {
   }
 }
 
-impl Display for super::BoolLit {
-  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", if self.0 { "true" } else { "false" })
-  }
-}
-
 impl Display for super::NumLit {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
     let super::NumLit {

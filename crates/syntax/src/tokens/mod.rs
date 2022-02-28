@@ -14,9 +14,6 @@ pub struct Ident(String);
 pub struct StrLit(String);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct BoolLit(bool);
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct NumLit {
   prefix: Option<NumLitPrefix>,
   val: i64,
