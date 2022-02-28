@@ -1,0 +1,131 @@
+---
+source: crates/syntax/tests/snapshot.rs
+assertion_line: 31
+expression: "toy_lang_syntax::ast::parse::file().parse_recovery_verbose(Stream::from_iter(text.len()..text.len(),\n                                                                             tokens))"
+
+---
+(
+    Some(
+        [
+            TopLevel {
+                vis: None,
+                item: Function(
+                    Function {
+                        extern_: Some(
+                            StrLit(
+                                "\"C\"",
+                            ),
+                        ),
+                        ident: Ident(
+                            "answer",
+                        ),
+                        generic_params: None,
+                        params: [],
+                        return_type: Some(
+                            Ident(
+                                Ident(
+                                    "i8",
+                                ),
+                            ),
+                        ),
+                        body: Some(
+                            Expr {
+                                primary: CodeBlock(
+                                    CodeBlock {
+                                        statement: [],
+                                        expr: Some(
+                                            Expr {
+                                                primary: NumLit(
+                                                    NumLit {
+                                                        prefix: None,
+                                                        val: 42,
+                                                        decimal: None,
+                                                        ty: None,
+                                                    },
+                                                ),
+                                                args: None,
+                                            },
+                                        ),
+                                    },
+                                ),
+                                args: None,
+                            },
+                        ),
+                    },
+                ),
+            },
+            TopLevel {
+                vis: None,
+                item: Function(
+                    Function {
+                        extern_: Some(
+                            StrLit(
+                                "\"C\"",
+                            ),
+                        ),
+                        ident: Ident(
+                            "ping",
+                        ),
+                        generic_params: None,
+                        params: [],
+                        return_type: Some(
+                            Ident(
+                                Ident(
+                                    "usize",
+                                ),
+                            ),
+                        ),
+                        body: Some(
+                            Expr {
+                                primary: CodeBlock(
+                                    CodeBlock {
+                                        statement: [],
+                                        expr: Some(
+                                            Expr {
+                                                primary: Ident(
+                                                    Ident(
+                                                        "ping",
+                                                    ),
+                                                ),
+                                                args: Some(
+                                                    [],
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                                args: None,
+                            },
+                        ),
+                    },
+                ),
+            },
+            TopLevel {
+                vis: None,
+                item: Function(
+                    Function {
+                        extern_: Some(
+                            StrLit(
+                                "\"C\"",
+                            ),
+                        ),
+                        ident: Ident(
+                            "pong",
+                        ),
+                        generic_params: None,
+                        params: [],
+                        return_type: Some(
+                            Ident(
+                                Ident(
+                                    "usize",
+                                ),
+                            ),
+                        ),
+                        body: None,
+                    },
+                ),
+            },
+        ],
+    ),
+    [],
+)

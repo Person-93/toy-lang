@@ -1,0 +1,38 @@
+---
+source: crates/syntax/tests/snapshot.rs
+assertion_line: 31
+expression: "toy_lang_syntax::ast::parse::file().parse_recovery_verbose(Stream::from_iter(text.len()..text.len(),\n                                                                             tokens))"
+
+---
+(
+    Some(
+        [
+            TopLevel {
+                vis: None,
+                item: Function(
+                    Function {
+                        extern_: None,
+                        ident: Ident(
+                            "f",
+                        ),
+                        generic_params: None,
+                        params: [],
+                        return_type: None,
+                        body: Some(
+                            Expr {
+                                primary: CodeBlock(
+                                    CodeBlock {
+                                        statement: [],
+                                        expr: None,
+                                    },
+                                ),
+                                args: None,
+                            },
+                        ),
+                    },
+                ),
+            },
+        ],
+    ),
+    [],
+)
