@@ -1,2 +1,2 @@
 [alias]
-codegen = "run --manifest-path ./codegen/Cargo.toml"
+codegen = "run --manifest-path ./tools/Cargo.toml --package toy-lang-codegen"

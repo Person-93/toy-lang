@@ -44,7 +44,7 @@ impl<'r, 's> Rule<'r, 's> {
   fn run(self, specs: &'r Specs<'s>, config: &'r Config<'s>) -> Result<()> {
     let Self { name, func } = self;
 
-    let name = Path::new("./crates/syntax/src/")
+    let name = Path::new("./compiler/syntax/src/")
       .join(name)
       .join("generated.rs");
 

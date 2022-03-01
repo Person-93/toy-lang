@@ -2,7 +2,6 @@
 
 # build artifacts
 /target
-/codegen/target
 
 # generated files
 tmp.rs

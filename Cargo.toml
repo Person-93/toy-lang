@@ -1,3 +1,3 @@
 [workspace]
 members = ["compiler/*"]
-exclude = ["codegen"]
+exclude = ["tools"]

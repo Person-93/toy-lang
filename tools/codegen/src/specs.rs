@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use ast_description_lang::{Config, Ident};
 use indexmap::IndexMap;
 use proc_macro2::TokenStream;
@@ -33,7 +33,7 @@ impl Specs<'_> {
 
   pub fn generate_ast_mod(&self, config: &Config<'_>) -> Result<TokenStream> {
     ast_description_lang::generate_ast_mod(
-      &fs::read_to_string("specs/toy.ast")?,
+      &fs::read_to_string("specs/toy.ast").context("failed to read ast file")?,
       &self.inner,
       config,
     )
