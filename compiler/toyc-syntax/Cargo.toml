@@ -1,5 +1,5 @@
 [package]
-name = "toy-lang-syntax"
+name = "toyc-syntax"
 authors = ["person93 <person93.person93@gmail.com>"]
 version = "0.1.0-dev"
 edition = "2021"

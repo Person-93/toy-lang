@@ -22,8 +22,8 @@ fn main() -> Result<()> {
     },
   ];
 
-  let specs = std::fs::read_to_string("specs/specs.toml")?;
-  let specs: specs::Specs = toml::de::from_str(&specs)?;
+  let specs = std::fs::read_to_string("specs/specs.toml").context("failed to read specs file")?;
+  let specs: specs::Specs = toml::de::from_str(&specs).context("failed to deserialize specs")?;
 
   let mut config = Config::default();
   config.error = "crate::error::ParseError";
@@ -44,7 +44,7 @@ impl<'r, 's> Rule<'r, 's> {
   fn run(self, specs: &'r Specs<'s>, config: &'r Config<'s>) -> Result<()> {
     let Self { name, func } = self;
 
-    let name = Path::new("./compiler/syntax/src/")
+    let path = Path::new("./compiler/toyc-syntax/src/")
       .join(name)
       .join("generated.rs");
 
@@ -77,7 +77,7 @@ impl<'r, 's> Rule<'r, 's> {
       contents.as_bytes()
     };
 
-    std::fs::write(name, output)?;
+    std::fs::write(path, output).with_context(|| format!("failed to write {name} file"))?;
 
     Ok(())
   }
