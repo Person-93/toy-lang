@@ -1,10 +1,43 @@
 pub use self::generated::*;
+use chumsky::Span as S;
 use internment::Intern;
-use logos::Lexer;
+use logos::{Lexer, Logos};
 use std::{num::ParseIntError, ops::Deref};
+use toyc_span::{BytePos, Span};
 
 mod fmt;
 mod generated;
+
+pub struct TokenIter<'source>(logos::SpannedIter<'source, Token>, Span);
+
+impl<'source> TokenIter<'source> {
+  pub fn new(text: &'source str) -> Self {
+    TokenIter(
+      Token::lexer(text).spanned(),
+      Span::new((), BytePos(text.len() as u32)..BytePos(text.len() as u32)),
+    )
+  }
+
+  pub fn into_stream(self) -> chumsky::Stream<'source, Token, Span, TokenIter<'source>> {
+    chumsky::Stream::from_iter(self.1, self)
+  }
+}
+
+impl Iterator for TokenIter<'_> {
+  type Item = (Token, Span);
+
+  fn next(&mut self) -> Option<Self::Item> {
+    self.0.next().map(|(token, span)| {
+      (
+        token,
+        Span {
+          lo: BytePos(span.start as u32),
+          hi: BytePos(span.end as u32),
+        },
+      )
+    })
+  }
+}
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Ident(Intern<String>);

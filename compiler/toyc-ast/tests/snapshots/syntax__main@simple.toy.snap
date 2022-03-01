@@ -1,7 +1,7 @@
 ---
 source: compiler/toyc-ast/tests/syntax.rs
-assertion_line: 10
-expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..text.len(),\n                                                    tokens))"
+assertion_line: 9
+expression: "ast::parse::file().parse_recovery(tokens)"
 
 ---
 (
@@ -22,13 +22,29 @@ expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..tex
                                     CodeBlock {
                                         statement: [],
                                         expr: None,
+                                        span: Span {
+                                            lo: 9,
+                                            hi: 9,
+                                        },
                                     },
                                 ),
                                 args: None,
+                                span: Span {
+                                    lo: 8,
+                                    hi: 10,
+                                },
                             },
                         ),
+                        span: Span {
+                            lo: 0,
+                            hi: 10,
+                        },
                     },
                 ),
+                span: Span {
+                    lo: 0,
+                    hi: 10,
+                },
             },
         ],
     ),

@@ -27,6 +27,7 @@ fn main() -> Result<()> {
 
   let mut config = Config::default();
   config.error = "crate::error::ParseError";
+  config.span = Some("toyc_span::Span");
 
   rules
     .into_iter()

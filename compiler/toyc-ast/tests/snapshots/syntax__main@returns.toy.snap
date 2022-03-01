@@ -1,7 +1,7 @@
 ---
 source: compiler/toyc-ast/tests/syntax.rs
-assertion_line: 10
-expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..text.len(),\n                                                    tokens))"
+assertion_line: 9
+expression: "ast::parse::file().parse_recovery(tokens)"
 
 ---
 (
@@ -28,10 +28,22 @@ expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..tex
                                     StrLit(hello world),
                                 ),
                                 args: None,
+                                span: Span {
+                                    lo: 25,
+                                    hi: 38,
+                                },
                             },
                         ),
+                        span: Span {
+                            lo: 0,
+                            hi: 38,
+                        },
                     },
                 ),
+                span: Span {
+                    lo: 0,
+                    hi: 38,
+                },
             },
             TopLevel {
                 vis: None,
@@ -62,15 +74,35 @@ expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..tex
                                                     },
                                                 ),
                                                 args: None,
+                                                span: Span {
+                                                    lo: 65,
+                                                    hi: 67,
+                                                },
                                             },
                                         ),
+                                        span: Span {
+                                            lo: 65,
+                                            hi: 67,
+                                        },
                                     },
                                 ),
                                 args: None,
+                                span: Span {
+                                    lo: 63,
+                                    hi: 69,
+                                },
                             },
                         ),
+                        span: Span {
+                            lo: 40,
+                            hi: 69,
+                        },
                     },
                 ),
+                span: Span {
+                    lo: 40,
+                    hi: 69,
+                },
             },
         ],
     ),

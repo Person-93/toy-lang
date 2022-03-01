@@ -1,7 +1,7 @@
 ---
 source: compiler/toyc-ast/tests/syntax.rs
-assertion_line: 10
-expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..text.len(),\n                                                    tokens))"
+assertion_line: 9
+expression: "ast::parse::file().parse_recovery(tokens)"
 
 ---
 (
@@ -38,15 +38,35 @@ expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..tex
                                                     },
                                                 ),
                                                 args: None,
+                                                span: Span {
+                                                    lo: 32,
+                                                    hi: 34,
+                                                },
                                             },
                                         ),
+                                        span: Span {
+                                            lo: 32,
+                                            hi: 34,
+                                        },
                                     },
                                 ),
                                 args: None,
+                                span: Span {
+                                    lo: 30,
+                                    hi: 36,
+                                },
                             },
                         ),
+                        span: Span {
+                            lo: 0,
+                            hi: 36,
+                        },
                     },
                 ),
+                span: Span {
+                    lo: 0,
+                    hi: 36,
+                },
             },
             TopLevel {
                 vis: None,
@@ -76,15 +96,35 @@ expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..tex
                                                 args: Some(
                                                     [],
                                                 ),
+                                                span: Span {
+                                                    lo: 71,
+                                                    hi: 77,
+                                                },
                                             },
                                         ),
+                                        span: Span {
+                                            lo: 71,
+                                            hi: 77,
+                                        },
                                     },
                                 ),
                                 args: None,
+                                span: Span {
+                                    lo: 69,
+                                    hi: 79,
+                                },
                             },
                         ),
+                        span: Span {
+                            lo: 38,
+                            hi: 79,
+                        },
                     },
                 ),
+                span: Span {
+                    lo: 38,
+                    hi: 79,
+                },
             },
             TopLevel {
                 vis: None,
@@ -102,8 +142,16 @@ expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..tex
                             ),
                         ),
                         body: None,
+                        span: Span {
+                            lo: 81,
+                            hi: 111,
+                        },
                     },
                 ),
+                span: Span {
+                    lo: 81,
+                    hi: 111,
+                },
             },
         ],
     ),
