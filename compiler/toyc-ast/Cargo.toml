@@ -11,6 +11,7 @@ publish = false
 chumsky = "0.8.0"
 internment = "0.6.0"
 logos = "0.12.0"
+toyc-span = { path = "../toyc-span" }
 
 [dev-dependencies]
 anyhow = "1.0.55"

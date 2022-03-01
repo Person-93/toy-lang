@@ -413,6 +413,14 @@ dependencies = [
  "internment",
  "logos",
  "test-util",
+ "toyc-span",
+]
+
+[[package]]
+name = "toyc-span"
+version = "0.1.0-dev"
+dependencies = [
+ "chumsky",
 ]
 
 [[package]]
