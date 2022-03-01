@@ -1,7 +1,7 @@
 ---
-source: crates/syntax/tests/syntax.rs
+source: compiler/toyc-syntax/tests/syntax.rs
 assertion_line: 10
-expression: "toy_lang_syntax::ast::parse::file().parse_recovery(Stream::from_iter(text.len()..text.len(),\n                                                                     tokens))"
+expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..text.len(),\n                                                    tokens))"
 
 ---
 (
@@ -12,20 +12,14 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery(Stream::from_ite
                 item: Function(
                     Function {
                         extern_: Some(
-                            StrLit(
-                                "C",
-                            ),
+                            StrLit(C),
                         ),
-                        ident: Ident(
-                            "answer",
-                        ),
+                        ident: Ident(answer),
                         generic_params: None,
                         params: [],
                         return_type: Some(
                             Ident(
-                                Ident(
-                                    "i8",
-                                ),
+                                Ident(i8),
                             ),
                         ),
                         body: Some(
@@ -59,20 +53,14 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery(Stream::from_ite
                 item: Function(
                     Function {
                         extern_: Some(
-                            StrLit(
-                                "C",
-                            ),
+                            StrLit(C),
                         ),
-                        ident: Ident(
-                            "ping",
-                        ),
+                        ident: Ident(ping),
                         generic_params: None,
                         params: [],
                         return_type: Some(
                             Ident(
-                                Ident(
-                                    "usize",
-                                ),
+                                Ident(usize),
                             ),
                         ),
                         body: Some(
@@ -83,9 +71,7 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery(Stream::from_ite
                                         expr: Some(
                                             Expr {
                                                 primary: Ident(
-                                                    Ident(
-                                                        "ping",
-                                                    ),
+                                                    Ident(ping),
                                                 ),
                                                 args: Some(
                                                     [],
@@ -105,20 +91,14 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery(Stream::from_ite
                 item: Function(
                     Function {
                         extern_: Some(
-                            StrLit(
-                                "C",
-                            ),
+                            StrLit(C),
                         ),
-                        ident: Ident(
-                            "pong",
-                        ),
+                        ident: Ident(pong),
                         generic_params: None,
                         params: [],
                         return_type: Some(
                             Ident(
-                                Ident(
-                                    "usize",
-                                ),
+                                Ident(usize),
                             ),
                         ),
                         body: None,

@@ -1,7 +1,7 @@
 ---
-source: crates/syntax/tests/syntax.rs
+source: compiler/toyc-syntax/tests/syntax.rs
 assertion_line: 10
-expression: "toy_lang_syntax::ast::parse::file().parse_recovery(Stream::from_iter(text.len()..text.len(),\n                                                                     tokens))"
+expression: "ast::parse::file().parse_recovery(Stream::from_iter(text.len()..text.len(),\n                                                    tokens))"
 
 ---
 (
@@ -12,26 +12,20 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery(Stream::from_ite
                 item: Function(
                     Function {
                         extern_: None,
-                        ident: Ident(
-                            "return_str",
-                        ),
+                        ident: Ident(return_str),
                         generic_params: None,
                         params: [],
                         return_type: Some(
                             Ref(
                                 Ident(
-                                    Ident(
-                                        "str",
-                                    ),
+                                    Ident(str),
                                 ),
                             ),
                         ),
                         body: Some(
                             Expr {
                                 primary: StrLit(
-                                    StrLit(
-                                        "hello world",
-                                    ),
+                                    StrLit(hello world),
                                 ),
                                 args: None,
                             },
@@ -44,16 +38,12 @@ expression: "toy_lang_syntax::ast::parse::file().parse_recovery(Stream::from_ite
                 item: Function(
                     Function {
                         extern_: None,
-                        ident: Ident(
-                            "return_num",
-                        ),
+                        ident: Ident(return_num),
                         generic_params: None,
                         params: [],
                         return_type: Some(
                             Ident(
-                                Ident(
-                                    "i8",
-                                ),
+                                Ident(i8),
                             ),
                         ),
                         body: Some(

@@ -1,15 +1,16 @@
 pub use self::generated::*;
+use internment::Intern;
 use logos::Lexer;
 use std::{num::ParseIntError, ops::Deref};
 
 mod fmt;
 mod generated;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct Ident(String);
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+pub struct Ident(Intern<String>);
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct StrLit(String);
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+pub struct StrLit(Intern<String>);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct NumLit {
@@ -36,17 +37,17 @@ impl StrLit {
   fn new(lex: &mut Lexer<Token>) -> Self {
     let slice = lex.slice();
     let slice = &slice[1..lex.slice().len() - 1];
-    StrLit(String::from(slice))
+    StrLit(Intern::new(String::from(slice)))
   }
 
-  pub fn take(self) -> String {
+  pub fn take(self) -> Intern<String> {
     self.0
   }
 }
 
 impl Ident {
   fn new(lex: &mut Lexer<Token>) -> Self {
-    Ident(String::from(lex.slice()))
+    Ident(Intern::new(String::from(lex.slice())))
   }
 }
 

@@ -1,5 +1,5 @@
 use crate::tokens::{NumLitPrefix, NumLitType};
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 impl Display for super::Ident {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -7,9 +7,21 @@ impl Display for super::Ident {
   }
 }
 
+impl Debug for super::Ident {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    write!(f, "Ident({self})")
+  }
+}
+
 impl Display for super::StrLit {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
     Display::fmt(&self.0, f)
+  }
+}
+
+impl Debug for super::StrLit {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    write!(f, "StrLit({self})")
   }
 }
 
