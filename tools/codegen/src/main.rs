@@ -44,7 +44,7 @@ impl<'r, 's> Rule<'r, 's> {
   fn run(self, specs: &'r Specs<'s>, config: &'r Config<'s>) -> Result<()> {
     let Self { name, func } = self;
 
-    let path = Path::new("./compiler/toyc-syntax/src/")
+    let path = Path::new("./compiler/toyc-ast/src/")
       .join(name)
       .join("generated.rs");
 

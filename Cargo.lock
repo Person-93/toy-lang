@@ -405,7 +405,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "toyc-syntax"
+name = "toyc-ast"
 version = "0.1.0-dev"
 dependencies = [
  "anyhow",

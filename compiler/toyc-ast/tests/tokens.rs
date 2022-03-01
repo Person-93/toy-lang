@@ -2,7 +2,7 @@ use anyhow::Result;
 use logos::{Logos, Span};
 use std::fmt::{self, Display, Formatter};
 use test_util::{assert_snapshot, snapshots};
-use toyc_syntax::tokens::Token;
+use toyc_ast::tokens::Token;
 
 fn main() -> Result<()> {
   snapshots(|text| {
