@@ -64,8 +64,8 @@ try = "try"
 bracket = { open = "left_bracket", close = "right_bracket" }
 angle_bracket = { open = "less_than", close = "greater_than" }
 brace = { open = "left_brace", close = "right_brace" }
-macro = { open = "macro_open", close = "right_bracket" }
-macro_inner = { open = "macro_inner_open", close = "right_bracket" }
+attr = { open = "attr_open", close = "right_bracket" }
+attr_inner = { open = "attr_inner_open", close = "right_bracket" }
 paren = { open = "left_paren", close = "right_paren" }
 generics = { open = "turbofish", close = "greater_than" }
 
@@ -97,8 +97,8 @@ left_bracket = "["
 left_paren = "("
 less_than = "<"
 less_than_equal = "<="
-macro_open = "#["
-macro_inner_open = "#!["
+attr_open = "#["
+attr_inner_open = "#!["
 modulo_assign = "%="
 mult_assign = "*="
 never = "!"
