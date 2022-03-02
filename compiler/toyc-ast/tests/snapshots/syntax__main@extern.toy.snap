@@ -6,154 +6,164 @@ expression: "ast::parse::file().parse_recovery(tokens)"
 ---
 (
     Some(
-        [
-            TopLevel {
-                vis: None,
-                item: Function(
-                    Function {
-                        extern_: Some(
-                            StrLit(C),
-                        ),
-                        ident: Ident(answer),
-                        generic_params: None,
-                        params: [],
-                        return_type: Some(
-                            Ident(
-                                Ident(i8),
+        File {
+            attrs: [],
+            items: [
+                Item {
+                    attrs: [],
+                    vis: None,
+                    item_kind: Function(
+                        Function {
+                            extern_: Some(
+                                StrLit(C),
                             ),
-                        ),
-                        body: Some(
-                            Expr {
-                                primary: CodeBlock(
-                                    CodeBlock {
-                                        statement: [],
-                                        expr: Some(
-                                            Expr {
-                                                primary: NumLit(
-                                                    NumLit {
-                                                        prefix: None,
-                                                        val: 42,
-                                                        decimal: None,
-                                                        ty: None,
+                            ident: Ident(answer),
+                            generic_params: None,
+                            params: [],
+                            return_type: Some(
+                                Ident(
+                                    Ident(i8),
+                                ),
+                            ),
+                            body: Some(
+                                Expr {
+                                    primary: CodeBlock(
+                                        CodeBlock {
+                                            statement: [],
+                                            expr: Some(
+                                                Expr {
+                                                    primary: NumLit(
+                                                        NumLit {
+                                                            prefix: None,
+                                                            val: 42,
+                                                            decimal: None,
+                                                            ty: None,
+                                                        },
+                                                    ),
+                                                    args: None,
+                                                    span: Span {
+                                                        lo: 32,
+                                                        hi: 34,
                                                     },
-                                                ),
-                                                args: None,
-                                                span: Span {
-                                                    lo: 32,
-                                                    hi: 34,
                                                 },
+                                            ),
+                                            span: Span {
+                                                lo: 32,
+                                                hi: 34,
                                             },
-                                        ),
-                                        span: Span {
-                                            lo: 32,
-                                            hi: 34,
                                         },
+                                    ),
+                                    args: None,
+                                    span: Span {
+                                        lo: 30,
+                                        hi: 36,
                                     },
-                                ),
-                                args: None,
-                                span: Span {
-                                    lo: 30,
-                                    hi: 36,
                                 },
-                            },
-                        ),
-                        span: Span {
-                            lo: 0,
-                            hi: 36,
-                        },
-                    },
-                ),
-                span: Span {
-                    lo: 0,
-                    hi: 36,
-                },
-            },
-            TopLevel {
-                vis: None,
-                item: Function(
-                    Function {
-                        extern_: Some(
-                            StrLit(C),
-                        ),
-                        ident: Ident(ping),
-                        generic_params: None,
-                        params: [],
-                        return_type: Some(
-                            Ident(
-                                Ident(usize),
                             ),
-                        ),
-                        body: Some(
-                            Expr {
-                                primary: CodeBlock(
-                                    CodeBlock {
-                                        statement: [],
-                                        expr: Some(
-                                            Expr {
-                                                primary: Ident(
-                                                    Ident(ping),
-                                                ),
-                                                args: Some(
-                                                    [],
-                                                ),
-                                                span: Span {
-                                                    lo: 71,
-                                                    hi: 77,
+                            span: Span {
+                                lo: 0,
+                                hi: 36,
+                            },
+                        },
+                    ),
+                    span: Span {
+                        lo: 0,
+                        hi: 36,
+                    },
+                },
+                Item {
+                    attrs: [],
+                    vis: None,
+                    item_kind: Function(
+                        Function {
+                            extern_: Some(
+                                StrLit(C),
+                            ),
+                            ident: Ident(ping),
+                            generic_params: None,
+                            params: [],
+                            return_type: Some(
+                                Ident(
+                                    Ident(usize),
+                                ),
+                            ),
+                            body: Some(
+                                Expr {
+                                    primary: CodeBlock(
+                                        CodeBlock {
+                                            statement: [],
+                                            expr: Some(
+                                                Expr {
+                                                    primary: Ident(
+                                                        Ident(ping),
+                                                    ),
+                                                    args: Some(
+                                                        [],
+                                                    ),
+                                                    span: Span {
+                                                        lo: 71,
+                                                        hi: 77,
+                                                    },
                                                 },
+                                            ),
+                                            span: Span {
+                                                lo: 71,
+                                                hi: 77,
                                             },
-                                        ),
-                                        span: Span {
-                                            lo: 71,
-                                            hi: 77,
                                         },
+                                    ),
+                                    args: None,
+                                    span: Span {
+                                        lo: 69,
+                                        hi: 79,
                                     },
-                                ),
-                                args: None,
-                                span: Span {
-                                    lo: 69,
-                                    hi: 79,
                                 },
-                            },
-                        ),
-                        span: Span {
-                            lo: 38,
-                            hi: 79,
-                        },
-                    },
-                ),
-                span: Span {
-                    lo: 38,
-                    hi: 79,
-                },
-            },
-            TopLevel {
-                vis: None,
-                item: Function(
-                    Function {
-                        extern_: Some(
-                            StrLit(C),
-                        ),
-                        ident: Ident(pong),
-                        generic_params: None,
-                        params: [],
-                        return_type: Some(
-                            Ident(
-                                Ident(usize),
                             ),
-                        ),
-                        body: None,
-                        span: Span {
-                            lo: 81,
-                            hi: 111,
+                            span: Span {
+                                lo: 38,
+                                hi: 79,
+                            },
                         },
+                    ),
+                    span: Span {
+                        lo: 38,
+                        hi: 79,
                     },
-                ),
-                span: Span {
-                    lo: 81,
-                    hi: 111,
                 },
+                Item {
+                    attrs: [],
+                    vis: None,
+                    item_kind: Function(
+                        Function {
+                            extern_: Some(
+                                StrLit(C),
+                            ),
+                            ident: Ident(pong),
+                            generic_params: None,
+                            params: [],
+                            return_type: Some(
+                                Ident(
+                                    Ident(usize),
+                                ),
+                            ),
+                            body: None,
+                            span: Span {
+                                lo: 81,
+                                hi: 111,
+                            },
+                        },
+                    ),
+                    span: Span {
+                        lo: 81,
+                        hi: 111,
+                    },
+                },
+            ],
+            span: Span {
+                lo: 0,
+                hi: 111,
             },
-        ],
+        },
     ),
     [],
 )

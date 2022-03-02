@@ -6,105 +6,114 @@ expression: "ast::parse::file().parse_recovery(tokens)"
 ---
 (
     Some(
-        [
-            TopLevel {
-                vis: None,
-                item: Function(
-                    Function {
-                        extern_: None,
-                        ident: Ident(return_str),
-                        generic_params: None,
-                        params: [],
-                        return_type: Some(
-                            Ref(
-                                Ident(
-                                    Ident(str),
+        File {
+            attrs: [],
+            items: [
+                Item {
+                    attrs: [],
+                    vis: None,
+                    item_kind: Function(
+                        Function {
+                            extern_: None,
+                            ident: Ident(return_str),
+                            generic_params: None,
+                            params: [],
+                            return_type: Some(
+                                Ref(
+                                    Ident(
+                                        Ident(str),
+                                    ),
                                 ),
                             ),
-                        ),
-                        body: Some(
-                            Expr {
-                                primary: StrLit(
-                                    StrLit(hello world),
-                                ),
-                                args: None,
-                                span: Span {
-                                    lo: 25,
-                                    hi: 38,
-                                },
-                            },
-                        ),
-                        span: Span {
-                            lo: 0,
-                            hi: 38,
-                        },
-                    },
-                ),
-                span: Span {
-                    lo: 0,
-                    hi: 38,
-                },
-            },
-            TopLevel {
-                vis: None,
-                item: Function(
-                    Function {
-                        extern_: None,
-                        ident: Ident(return_num),
-                        generic_params: None,
-                        params: [],
-                        return_type: Some(
-                            Ident(
-                                Ident(i8),
-                            ),
-                        ),
-                        body: Some(
-                            Expr {
-                                primary: CodeBlock(
-                                    CodeBlock {
-                                        statement: [],
-                                        expr: Some(
-                                            Expr {
-                                                primary: NumLit(
-                                                    NumLit {
-                                                        prefix: None,
-                                                        val: 42,
-                                                        decimal: None,
-                                                        ty: None,
-                                                    },
-                                                ),
-                                                args: None,
-                                                span: Span {
-                                                    lo: 65,
-                                                    hi: 67,
-                                                },
-                                            },
-                                        ),
-                                        span: Span {
-                                            lo: 65,
-                                            hi: 67,
-                                        },
+                            body: Some(
+                                Expr {
+                                    primary: StrLit(
+                                        StrLit(hello world),
+                                    ),
+                                    args: None,
+                                    span: Span {
+                                        lo: 25,
+                                        hi: 38,
                                     },
-                                ),
-                                args: None,
-                                span: Span {
-                                    lo: 63,
-                                    hi: 69,
                                 },
+                            ),
+                            span: Span {
+                                lo: 0,
+                                hi: 38,
                             },
-                        ),
-                        span: Span {
-                            lo: 40,
-                            hi: 69,
                         },
+                    ),
+                    span: Span {
+                        lo: 0,
+                        hi: 38,
                     },
-                ),
-                span: Span {
-                    lo: 40,
-                    hi: 69,
                 },
+                Item {
+                    attrs: [],
+                    vis: None,
+                    item_kind: Function(
+                        Function {
+                            extern_: None,
+                            ident: Ident(return_num),
+                            generic_params: None,
+                            params: [],
+                            return_type: Some(
+                                Ident(
+                                    Ident(i8),
+                                ),
+                            ),
+                            body: Some(
+                                Expr {
+                                    primary: CodeBlock(
+                                        CodeBlock {
+                                            statement: [],
+                                            expr: Some(
+                                                Expr {
+                                                    primary: NumLit(
+                                                        NumLit {
+                                                            prefix: None,
+                                                            val: 42,
+                                                            decimal: None,
+                                                            ty: None,
+                                                        },
+                                                    ),
+                                                    args: None,
+                                                    span: Span {
+                                                        lo: 65,
+                                                        hi: 67,
+                                                    },
+                                                },
+                                            ),
+                                            span: Span {
+                                                lo: 65,
+                                                hi: 67,
+                                            },
+                                        },
+                                    ),
+                                    args: None,
+                                    span: Span {
+                                        lo: 63,
+                                        hi: 69,
+                                    },
+                                },
+                            ),
+                            span: Span {
+                                lo: 40,
+                                hi: 69,
+                            },
+                        },
+                    ),
+                    span: Span {
+                        lo: 40,
+                        hi: 69,
+                    },
+                },
+            ],
+            span: Span {
+                lo: 0,
+                hi: 69,
             },
-        ],
+        },
     ),
     [],
 )

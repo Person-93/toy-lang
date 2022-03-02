@@ -6,47 +6,55 @@ expression: "ast::parse::file().parse_recovery(tokens)"
 ---
 (
     Some(
-        [
-            TopLevel {
-                vis: None,
-                item: Function(
-                    Function {
-                        extern_: None,
-                        ident: Ident(f),
-                        generic_params: None,
-                        params: [],
-                        return_type: None,
-                        body: Some(
-                            Expr {
-                                primary: CodeBlock(
-                                    CodeBlock {
-                                        statement: [],
-                                        expr: None,
-                                        span: Span {
-                                            lo: 9,
-                                            hi: 9,
+        File {
+            attrs: [],
+            items: [
+                Item {
+                    attrs: [],
+                    vis: None,
+                    item_kind: Function(
+                        Function {
+                            extern_: None,
+                            ident: Ident(f),
+                            generic_params: None,
+                            params: [],
+                            return_type: None,
+                            body: Some(
+                                Expr {
+                                    primary: CodeBlock(
+                                        CodeBlock {
+                                            statement: [],
+                                            expr: None,
+                                            span: Span {
+                                                lo: 9,
+                                                hi: 9,
+                                            },
                                         },
+                                    ),
+                                    args: None,
+                                    span: Span {
+                                        lo: 8,
+                                        hi: 10,
                                     },
-                                ),
-                                args: None,
-                                span: Span {
-                                    lo: 8,
-                                    hi: 10,
                                 },
+                            ),
+                            span: Span {
+                                lo: 0,
+                                hi: 10,
                             },
-                        ),
-                        span: Span {
-                            lo: 0,
-                            hi: 10,
                         },
+                    ),
+                    span: Span {
+                        lo: 0,
+                        hi: 10,
                     },
-                ),
-                span: Span {
-                    lo: 0,
-                    hi: 10,
                 },
+            ],
+            span: Span {
+                lo: 0,
+                hi: 10,
             },
-        ],
+        },
     ),
     [],
 )
