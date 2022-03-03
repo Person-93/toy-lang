@@ -56,13 +56,9 @@ impl Diagnostic {
     self
   }
 
-  pub fn attach_note(
-    &mut self,
-    level: Level,
-    label: impl Into<String>,
-  ) -> &mut Self {
+  pub fn attach_note(&mut self, label: impl Into<String>) -> &mut Self {
     self.children.push(SubDiagnostic {
-      level,
+      level: Level::Note,
       label: label.into(),
     });
     self
