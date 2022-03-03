@@ -417,6 +417,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "toyc-ast-passes"
+version = "0.0.0"
+dependencies = [
+ "toyc-ast",
+ "toyc-errors",
+]
+
+[[package]]
 name = "toyc-errors"
 version = "0.0.0"
 dependencies = [
