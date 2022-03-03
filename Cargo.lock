@@ -421,6 +421,7 @@ name = "toyc-span"
 version = "0.0.0"
 dependencies = [
  "chumsky",
+ "serde",
 ]
 
 [[package]]
