@@ -1,0 +1,15 @@
+[package]
+name = "toyc"
+authors = ["person93 <person93.person93@gmail.com>"]
+version = "0.0.0"
+edition = "2021"
+description = "A toy programming language to play around with"
+license = "MIT OR APACHE"
+publish = false
+
+[dependencies]
+clap = { version = "3.1.5", features = ["derive"] }
+toyc-ast = { path = "../toyc-ast" }
+toyc-ast-passes = { path = "../toyc-ast-passes" }
+toyc-errors = { path = "../toyc-errors" }
+toyc-session = { path = "../toyc-session" }
