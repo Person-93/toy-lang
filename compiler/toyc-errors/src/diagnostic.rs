@@ -32,7 +32,11 @@ impl Diagnostic {
     }
   }
 
-  pub fn add_span(&mut self, span: Span, label: impl Into<String>) -> &mut Self {
+  pub fn add_span(
+    &mut self,
+    span: Span,
+    label: impl Into<String>,
+  ) -> &mut Self {
     self.spans.push(SpanLabel {
       span,
       label: label.into(),
@@ -52,7 +56,11 @@ impl Diagnostic {
     self
   }
 
-  pub fn attach_note(&mut self, level: Level, label: impl Into<String>) -> &mut Self {
+  pub fn attach_note(
+    &mut self,
+    level: Level,
+    label: impl Into<String>,
+  ) -> &mut Self {
     self.children.push(SubDiagnostic {
       level,
       label: label.into(),

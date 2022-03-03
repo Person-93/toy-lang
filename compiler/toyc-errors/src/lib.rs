@@ -1,4 +1,7 @@
-pub use self::{diagnostic::Diagnostic, diagnostic_builder::DiagnosticBuilder, handler::Handler};
+pub use self::{
+  diagnostic::Diagnostic, diagnostic_builder::DiagnosticBuilder,
+  handler::Handler,
+};
 use serde::Serialize;
 use std::fmt::{self, Display, Formatter};
 
@@ -7,7 +10,9 @@ mod diagnostic_builder;
 pub mod emitter;
 mod handler;
 
-#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize)]
+#[derive(
+  Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize,
+)]
 pub enum Level {
   Warning,
   Error,

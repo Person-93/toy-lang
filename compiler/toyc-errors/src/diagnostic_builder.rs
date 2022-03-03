@@ -15,7 +15,11 @@ enum DiagnosticBuilderState<'a> {
 }
 
 impl<'a> DiagnosticBuilder<'a> {
-  pub(crate) fn new(handler: &'a Handler, level: Level, message: impl Into<String>) -> Self {
+  pub(crate) fn new(
+    handler: &'a Handler,
+    level: Level,
+    message: impl Into<String>,
+  ) -> Self {
     Self {
       diagnostic: Diagnostic::new(level, message),
       state: DiagnosticBuilderState::Emittable(handler),

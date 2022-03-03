@@ -18,7 +18,9 @@ impl<'source> TokenIter<'source> {
     )
   }
 
-  pub fn into_stream(self) -> chumsky::Stream<'source, Token, Span, TokenIter<'source>> {
+  pub fn into_stream(
+    self,
+  ) -> chumsky::Stream<'source, Token, Span, TokenIter<'source>> {
     chumsky::Stream::from_iter(self.1, self)
   }
 }
@@ -111,7 +113,9 @@ impl NumLit {
         "b" => Some(NumLitPrefix::Binary),
         "x" => Some(NumLitPrefix::Hex),
         "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" => None,
-        lit_type => return Err(NumLitErr::InvalidType(lit_type.chars().next().unwrap())),
+        lit_type => {
+          return Err(NumLitErr::InvalidType(lit_type.chars().next().unwrap()))
+        }
       }
     };
 
@@ -149,7 +153,9 @@ impl NumLit {
     }?;
 
     let decimal = match dot_index {
-      Some(dot_index) => Some(u64::from_str_radix(&slice[dot_index + 1..], radix)?),
+      Some(dot_index) => {
+        Some(u64::from_str_radix(&slice[dot_index + 1..], radix)?)
+      }
       None => None,
     };
 

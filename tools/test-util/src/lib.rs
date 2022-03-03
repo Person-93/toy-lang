@@ -6,8 +6,8 @@ use std::{fs, path::Path};
 pub fn snapshots(f: fn(&str) -> ()) -> Result<()> {
   let root = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
   let dir = root.join("toys");
-  for entry in
-    fs::read_dir(&dir).with_context(|| format!("missing toys directory: {}", dir.display()))?
+  for entry in fs::read_dir(&dir)
+    .with_context(|| format!("missing toys directory: {}", dir.display()))?
   {
     let entry = entry.context("failed reading directory entry")?;
     if !entry

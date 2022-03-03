@@ -22,8 +22,10 @@ fn main() -> Result<()> {
     },
   ];
 
-  let specs = std::fs::read_to_string("specs/specs.toml").context("failed to read specs file")?;
-  let specs: specs::Specs = toml::de::from_str(&specs).context("failed to deserialize specs")?;
+  let specs = std::fs::read_to_string("specs/specs.toml")
+    .context("failed to read specs file")?;
+  let specs: specs::Specs =
+    toml::de::from_str(&specs).context("failed to deserialize specs")?;
 
   let mut config = Config::default();
   config.error = "crate::error::ParseError";
@@ -78,7 +80,8 @@ impl<'r, 's> Rule<'r, 's> {
       contents.as_bytes()
     };
 
-    std::fs::write(path, output).with_context(|| format!("failed to write {name} file"))?;
+    std::fs::write(path, output)
+      .with_context(|| format!("failed to write {name} file"))?;
 
     Ok(())
   }
