@@ -413,6 +413,7 @@ dependencies = [
  "internment",
  "logos",
  "test-util",
+ "toyc-errors",
  "toyc-span",
 ]
 
