@@ -23,8 +23,8 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                                 Expr {
                                     primary: CodeBlock(
                                         CodeBlock {
-                                            statement: [],
-                                            expr: None,
+                                            statements: [],
+                                            trailing: None,
                                             span: Span {
                                                 lo: 9,
                                                 hi: 9,

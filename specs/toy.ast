@@ -33,7 +33,7 @@ generics_args = delim[generics]<type,*>
 
 expr = expr_fragment:primary delim[paren]<expr,*>?:args
 expr_fragment = code_block | ident | str_lit | num_lit
-code_block = delim[brace]<statement* expr~?>
+code_block = delim[brace]<statement*:statements expr~?:trailing>
 statement = attr*:attrs expr semi
 
 vis = kw_pub delim[paren]<vis_kind>?

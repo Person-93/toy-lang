@@ -29,8 +29,8 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                                 Expr {
                                     primary: CodeBlock(
                                         CodeBlock {
-                                            statement: [],
-                                            expr: Some(
+                                            statements: [],
+                                            trailing: Some(
                                                 Expr {
                                                     primary: NumLit(
                                                         NumLit {
@@ -91,8 +91,8 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                                 Expr {
                                     primary: CodeBlock(
                                         CodeBlock {
-                                            statement: [],
-                                            expr: Some(
+                                            statements: [],
+                                            trailing: Some(
                                                 Expr {
                                                     primary: Ident(
                                                         Ident(ping),
