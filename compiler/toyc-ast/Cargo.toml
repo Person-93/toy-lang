@@ -16,7 +16,7 @@ toyc-span = { path = "../toyc-span" }
 
 [dev-dependencies]
 anyhow = "1.0.55"
-test-util = { path = "../../tools/test-util" }
+test-util = { path = "../../src/test-util" }
 
 [[test]]
 name = "tokens"

@@ -1,3 +1,6 @@
 [workspace]
-members = ["compiler/*"]
-exclude = ["tools"]
+members = [
+    "compiler/toyc",
+    "src/codegen",
+]
+resolver = "2"
