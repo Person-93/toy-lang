@@ -168,6 +168,12 @@ impl NumLit {
   }
 }
 
+impl<T: AsRef<str> + ?Sized> PartialEq<T> for StrLit {
+  fn eq(&self, other: &T) -> bool {
+    self.0.as_ref() == other.as_ref()
+  }
+}
+
 pub enum NumLitErr {
   ParseInt(ParseIntError),
   InvalidType(char),
