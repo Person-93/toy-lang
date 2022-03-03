@@ -1,6 +1,6 @@
 ---
 source: compiler/toyc-ast/tests/syntax.rs
-assertion_line: 9
+assertion_line: 8
 expression: "ast::parse::file().parse_recovery(tokens)"
 
 ---
@@ -15,20 +15,20 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                     item_kind: Function(
                         Function {
                             extern_: None,
-                            ident: Ident(return_str),
+                            ident: return_str @ 3..13,
                             generic_params: None,
                             params: [],
                             return_type: Some(
                                 Ref(
                                     Ident(
-                                        Ident(str),
+                                        str @ 20..23,
                                     ),
                                 ),
                             ),
                             body: Some(
                                 Expr {
                                     primary: StrLit(
-                                        StrLit(hello world),
+                                        "hello world",
                                     ),
                                     args: None,
                                     span: Span {
@@ -54,12 +54,12 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                     item_kind: Function(
                         Function {
                             extern_: None,
-                            ident: Ident(return_num),
+                            ident: return_num @ 43..53,
                             generic_params: None,
                             params: [],
                             return_type: Some(
                                 Ident(
-                                    Ident(i8),
+                                    i8 @ 59..61,
                                 ),
                             ),
                             body: Some(

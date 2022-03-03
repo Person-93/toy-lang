@@ -39,9 +39,9 @@ checksum = "159bb86af3a200e19a068f4224eae4c8bb2d0fa054c7e5d1cacd5cef95e684cd"
 
 [[package]]
 name = "ast-description-lang"
-version = "0.3.3"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7f901f04ee00ac499dfbb67c8f0f21e0e648315544e99f4bfeac95cb7e1f510"
+checksum = "8cf98164582881e95e8f67db3f1c38b53a0d12b1daf29e6ee5d4eb4bdc62306d"
 dependencies = [
  "anyhow",
  "heck",
@@ -655,7 +655,6 @@ name = "toyc-ast"
 version = "0.0.0"
 dependencies = [
  "chumsky",
- "internment",
  "logos",
  "test-util",
  "toyc-errors",
@@ -691,6 +690,7 @@ name = "toyc-span"
 version = "0.0.0"
 dependencies = [
  "chumsky",
+ "internment",
  "serde",
 ]
 

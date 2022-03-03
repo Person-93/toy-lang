@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::{
-  fmt::{self, Debug, Formatter},
+  fmt::{self, Debug, Display, Formatter},
   ops::Range,
 };
 
@@ -22,9 +22,11 @@ impl Span {
   }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize)]
-#[serde(transparent)]
-pub struct BytePos(pub u32);
+impl Display for Span {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    write!(f, "{}..{}", self.lo, self.hi)
+  }
+}
 
 impl chumsky::Span for Span {
   type Context = ();
@@ -45,6 +47,16 @@ impl chumsky::Span for Span {
 
   fn end(&self) -> Self::Offset {
     self.hi
+  }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize)]
+#[serde(transparent)]
+pub struct BytePos(pub u32);
+
+impl Display for BytePos {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    Display::fmt(&self.0, f)
   }
 }
 

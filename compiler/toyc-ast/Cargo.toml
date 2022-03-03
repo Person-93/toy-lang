@@ -9,7 +9,6 @@ publish = false
 
 [dependencies]
 chumsky = "0.8.0"
-internment = "0.6.0"
 logos = "0.12.0"
 toyc-errors = { path = "../toyc-errors" }
 toyc-span = { path = "../toyc-span" }
