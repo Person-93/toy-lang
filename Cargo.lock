@@ -417,6 +417,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "toyc-errors"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "toyc-span",
+]
+
+[[package]]
 name = "toyc-span"
 version = "0.0.0"
 dependencies = [

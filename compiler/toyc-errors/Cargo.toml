@@ -1,0 +1,13 @@
+[package]
+name = "toyc-errors"
+authors = ["person93 <person93.person93@gmail.com>"]
+version = "0.0.0"
+edition = "2021"
+description = "A toy programming language to play around with"
+license = "MIT OR APACHE"
+publish = false
+
+[dependencies]
+serde = { version = "1.0.136", features = ["derive"] }
+serde_json = "1.0.79"
+toyc-span = { path = "../toyc-span" }
