@@ -10,6 +10,18 @@ pub struct Span {
   pub hi: BytePos,
 }
 
+impl Span {
+  pub fn shrink_to_lo(mut self) -> Self {
+    self.hi = self.lo;
+    self
+  }
+
+  pub fn shrink_to_hi(mut self) -> Self {
+    self.lo = self.hi;
+    self
+  }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize)]
 #[serde(transparent)]
 pub struct BytePos(pub u32);
