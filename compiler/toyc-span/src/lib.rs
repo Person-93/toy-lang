@@ -1,15 +1,17 @@
+use serde::Serialize;
 use std::{
   fmt::{self, Debug, Formatter},
   ops::Range,
 };
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Serialize)]
 pub struct Span {
   pub lo: BytePos,
   pub hi: BytePos,
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize)]
+#[serde(transparent)]
 pub struct BytePos(pub u32);
 
 impl chumsky::Span for Span {
