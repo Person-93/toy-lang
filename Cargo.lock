@@ -435,6 +435,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "toyc-session"
+version = "0.0.0"
+dependencies = [
+ "toyc-errors",
+]
+
+[[package]]
 name = "toyc-span"
 version = "0.0.0"
 dependencies = [
