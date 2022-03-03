@@ -14,6 +14,7 @@ mod handler;
   Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize,
 )]
 pub enum Level {
+  Note,
   Warning,
   Error,
   Fatal,
@@ -23,6 +24,7 @@ pub enum Level {
 impl Display for Level {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     match self {
+      Level::Note => write!(f, "note"),
       Level::Warning => write!(f, "warning"),
       Level::Error | Level::Fatal => write!(f, "error"),
       Level::Bug => write!(f, "error: internal compiler error"),
