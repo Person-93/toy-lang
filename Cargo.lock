@@ -644,12 +644,17 @@ name = "toyc"
 version = "0.0.0"
 dependencies = [
  "clap",
+ "toyc-arena",
  "toyc-ast",
  "toyc-ast-passes",
  "toyc-errors",
  "toyc-hir",
  "toyc-session",
 ]
+
+[[package]]
+name = "toyc-arena"
+version = "0.0.0"
 
 [[package]]
 name = "toyc-ast"
