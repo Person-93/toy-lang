@@ -647,6 +647,7 @@ dependencies = [
  "toyc-ast",
  "toyc-ast-passes",
  "toyc-errors",
+ "toyc-hir",
  "toyc-session",
 ]
 
@@ -675,6 +676,13 @@ version = "0.0.0"
 dependencies = [
  "serde",
  "serde_json",
+ "toyc-span",
+]
+
+[[package]]
+name = "toyc-hir"
+version = "0.0.0"
+dependencies = [
  "toyc-span",
 ]
 
