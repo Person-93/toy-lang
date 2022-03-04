@@ -655,6 +655,9 @@ dependencies = [
 [[package]]
 name = "toyc-arena"
 version = "0.0.0"
+dependencies = [
+ "smallvec",
+]
 
 [[package]]
 name = "toyc-ast"
