@@ -1,10 +1,11 @@
 use crate::Span;
-use alloc::{borrow::ToOwned, string::String};
+use alloc::{borrow::ToOwned, boxed::Box};
 use core::{
   fmt::{self, Debug, Display, Formatter},
   ops::Deref,
 };
 use internment::Intern;
+use unicode_xid::UnicodeXID;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Ident {
@@ -13,10 +14,25 @@ pub struct Ident {
 }
 
 impl Ident {
-  pub fn from_string_and_span(name: &str, span: Span) -> Ident {
-    Ident {
-      name: Symbol(Intern::new(name.to_owned())),
-      span,
+  pub fn from_string_and_span(
+    name: &str,
+    span: Span,
+  ) -> Result<Ident, InvalidIdent> {
+    let name = name.trim();
+    if name.is_empty() {
+      Err(InvalidIdent::Empty)
+    } else {
+      let mut chars = name.chars();
+      let name = Symbol::new(name);
+      if !chars.next().unwrap().is_xid_start() {
+        return Err(InvalidIdent::Invalid(name));
+      }
+      for c in chars {
+        if !c.is_xid_continue() {
+          return Err(InvalidIdent::Invalid(name));
+        }
+      }
+      Ok(Ident { name, span })
     }
   }
 }
@@ -33,6 +49,21 @@ impl Debug for Ident {
   }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum InvalidIdent {
+  Empty,
+  Invalid(Symbol),
+}
+
+impl Display for InvalidIdent {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    match self {
+      InvalidIdent::Empty => write!(f, "identifier must not be empty"),
+      InvalidIdent::Invalid(symbol) => write!(f, "invalid ident `{symbol}`"),
+    }
+  }
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct StrLit {
   pub value: Symbol,
@@ -42,7 +73,7 @@ pub struct StrLit {
 impl StrLit {
   pub fn new(value: &str, span: Span) -> StrLit {
     StrLit {
-      value: Symbol(Intern::new(value.to_owned())),
+      value: Symbol::new(value),
       span,
     }
   }
@@ -67,11 +98,11 @@ impl Debug for StrLit {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
-pub struct Symbol(internment::Intern<String>);
+pub struct Symbol(internment::Intern<&'static str>);
 
 impl Symbol {
   pub fn new(s: &str) -> Symbol {
-    Symbol(Intern::new(s.to_owned()))
+    Symbol(Intern::new(Box::leak(s.to_owned().into_boxed_str())))
   }
 }
 

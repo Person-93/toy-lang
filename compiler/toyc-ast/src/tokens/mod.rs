@@ -6,13 +6,13 @@ use std::{
   num::ParseIntError,
 };
 pub(crate) use toyc_span::{
-  symbol::{Ident, Symbol},
+  symbol::{Ident, InvalidIdent, Symbol},
   BytePos, Span,
 };
 
 mod generated;
 
-fn make_ident(lexer: &mut Lexer<Token>) -> Ident {
+fn make_ident(lexer: &mut Lexer<Token>) -> Result<Ident, InvalidIdent> {
   let span = lexer.span();
   Ident::from_string_and_span(
     lexer.slice(),
@@ -26,14 +26,7 @@ fn make_ident(lexer: &mut Lexer<Token>) -> Ident {
 fn make_str_lit(lexer: &mut Lexer<Token>) -> StrLit {
   let slice = lexer.slice();
   let slice = &slice[1..lexer.slice().len() - 1];
-  let span = lexer.span();
-  StrLit {
-    value: Symbol::new(slice),
-    span: Span {
-      lo: BytePos(span.start as u32),
-      hi: BytePos(span.end as u32),
-    },
-  }
+  StrLit(Symbol::new(slice))
 }
 
 fn make_num_lit(lexer: &mut Lexer<Token>) -> Result<NumLit, NumLitErr> {
@@ -134,20 +127,17 @@ impl Iterator for TokenIter<'_> {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
-pub struct StrLit {
-  pub value: Symbol,
-  pub span: Span,
-}
+pub struct StrLit(pub Symbol);
 
 impl<T: AsRef<str> + ?Sized> PartialEq<T> for StrLit {
   fn eq(&self, other: &T) -> bool {
-    *self.value == *other.as_ref()
+    *self.0 == *other.as_ref()
   }
 }
 
 impl Display for StrLit {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-    Display::fmt(&self.value, f)
+    Display::fmt(&self.0, f)
   }
 }
 
