@@ -2,11 +2,11 @@ pub use self::generated::*;
 use chumsky::Span as S;
 use logos::{Lexer, Logos};
 use std::{
-  fmt::{self, Display, Formatter},
+  fmt::{self, Debug, Display, Formatter},
   num::ParseIntError,
 };
 pub(crate) use toyc_span::{
-  symbol::{Ident, StrLit},
+  symbol::{Ident, Symbol},
   BytePos, Span,
 };
 
@@ -27,13 +27,13 @@ fn make_str_lit(lexer: &mut Lexer<Token>) -> StrLit {
   let slice = lexer.slice();
   let slice = &slice[1..lexer.slice().len() - 1];
   let span = lexer.span();
-  StrLit::new(
-    slice,
-    Span {
+  StrLit {
+    value: Symbol::new(slice),
+    span: Span {
       lo: BytePos(span.start as u32),
       hi: BytePos(span.end as u32),
     },
-  )
+  }
 }
 
 fn make_num_lit(lexer: &mut Lexer<Token>) -> Result<NumLit, NumLitErr> {
@@ -130,6 +130,30 @@ impl Iterator for TokenIter<'_> {
         },
       )
     })
+  }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+pub struct StrLit {
+  pub value: Symbol,
+  pub span: Span,
+}
+
+impl<T: AsRef<str> + ?Sized> PartialEq<T> for StrLit {
+  fn eq(&self, other: &T) -> bool {
+    *self.value == *other.as_ref()
+  }
+}
+
+impl Display for StrLit {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    Display::fmt(&self.value, f)
+  }
+}
+
+impl Debug for StrLit {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    write!(f, "\"{self}\"")
   }
 }
 

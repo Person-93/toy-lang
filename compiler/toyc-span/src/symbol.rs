@@ -68,6 +68,12 @@ impl Debug for StrLit {
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Symbol(internment::Intern<String>);
 
+impl Symbol {
+  pub fn new(s: &str) -> Symbol {
+    Symbol(Intern::new(s.to_owned()))
+  }
+}
+
 impl Display for Symbol {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     Display::fmt(self.deref(), f)
