@@ -80,14 +80,14 @@ fn make_num_lit(lexer: &mut Lexer<Token>) -> Result<NumLit, NumLitErr> {
   let val_index: usize = if prefix.is_none() { 0 } else { 2 };
   let val = match (dot_index, ty_index) {
     (Some(end_index), _) | (None, Some(end_index)) => {
-      i64::from_str_radix(&slice[val_index..end_index], radix)
+      i32::from_str_radix(&slice[val_index..end_index], radix)
     }
-    (None, None) => i64::from_str_radix(&slice[val_index..], radix),
+    (None, None) => i32::from_str_radix(&slice[val_index..], radix),
   }?;
 
   let decimal = match dot_index {
     Some(dot_index) => {
-      Some(u64::from_str_radix(&slice[dot_index + 1..], radix)?)
+      Some(u16::from_str_radix(&slice[dot_index + 1..], radix)?)
     }
     None => None,
   };
@@ -160,8 +160,8 @@ impl Debug for StrLit {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct NumLit {
   pub prefix: Option<NumLitPrefix>,
-  pub val: i64,
-  pub decimal: Option<u64>,
+  pub val: i32,
+  pub decimal: Option<u16>,
   pub ty: Option<NumLitType>,
 }
 
