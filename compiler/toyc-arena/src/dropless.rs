@@ -1,4 +1,4 @@
-use crate::{Arena, HUGE_PAGE, PAGE};
+use crate::{private::Sealed, Arena, HUGE_PAGE, PAGE};
 use alloc::{
   alloc::{alloc, Layout},
   boxed::Box,
@@ -59,6 +59,22 @@ impl<T> Arena<T> for DroplessArena {
   }
 }
 
+impl<T> Sealed<T> for DroplessArena {
+  //noinspection DuplicatedCode
+  unsafe fn alloc_uninit_slice(&self, len: usize) -> *mut T {
+    let ptr = self.ptr.get();
+    let len = mem::size_of::<T>() * len;
+    (if (self.end.get().offset_from(ptr) as usize) < len {
+      self.grow(len);
+      self.ptr.get()
+    } else {
+      self.ptr.set(ptr.add(len));
+      ptr
+    })
+    .cast()
+  }
+}
+
 impl DroplessArena {
   pub const fn new() -> DroplessArena {
     DroplessArena {
@@ -106,6 +122,14 @@ mod tests {
     let input = 42;
     let output = arena.alloc(input);
     assert_eq!(input, *output);
+  }
+
+  #[test]
+  fn test_returns_slice() {
+    let arena = DroplessArena::default();
+    let slice = arena.alloc_iter([1, 2, 3, 4, 5]);
+    assert_eq!(slice.len(), 5);
+    assert_eq!(slice, &[1, 2, 3, 4, 5]);
   }
 
   #[test]

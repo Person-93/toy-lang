@@ -1,4 +1,4 @@
-use crate::{Arena, HUGE_PAGE, PAGE};
+use crate::{private::Sealed, Arena, HUGE_PAGE, PAGE};
 use alloc::{alloc::alloc, alloc::Layout, boxed::Box, vec::Vec};
 use core::{
   cell::{Cell, RefCell},
@@ -41,6 +41,20 @@ impl<T> Arena<T> for TypedArena<T> {
       self.ptr.set(ptr.offset(1));
       ptr::write(ptr, object);
       &mut *ptr
+    }
+  }
+}
+
+impl<T> Sealed<T> for TypedArena<T> {
+  //noinspection DuplicatedCode
+  unsafe fn alloc_uninit_slice(&self, len: usize) -> *mut T {
+    let ptr = self.ptr.get();
+    if (self.end.get().offset_from(ptr) as usize) < len {
+      self.grow(len);
+      self.ptr.get()
+    } else {
+      self.ptr.set(ptr.add(len));
+      ptr
     }
   }
 }
@@ -176,6 +190,14 @@ mod tests {
     let arena = TypedArena::default();
     let output = arena.alloc(String::from("hello world"));
     assert_eq!("hello world", output);
+  }
+
+  #[test]
+  fn test_returns_slice() {
+    let arena = TypedArena::default();
+    let slice = arena.alloc_iter([1, 2, 3, 4, 5]);
+    assert_eq!(slice.len(), 5);
+    assert_eq!(slice, &[1, 2, 3, 4, 5]);
   }
 
   #[test]
