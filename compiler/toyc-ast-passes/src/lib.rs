@@ -1,3 +1,8 @@
+#![no_std]
+
+#[macro_use]
+extern crate alloc;
+
 use toyc_ast::{
   ast::{AttrData, Function, Item, VisKind},
   visitor::{self, Visitor},

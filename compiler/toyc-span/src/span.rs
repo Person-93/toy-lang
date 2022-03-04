@@ -1,8 +1,8 @@
-use serde::Serialize;
-use std::{
+use core::{
   fmt::{self, Debug, Display, Formatter},
   ops::Range,
 };
+use serde::Serialize;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Serialize)]
 pub struct Span {

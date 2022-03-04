@@ -1,9 +1,10 @@
 use crate::Span;
-use internment::Intern;
-use std::{
+use alloc::{borrow::ToOwned, string::String};
+use core::{
   fmt::{self, Debug, Display, Formatter},
   ops::Deref,
 };
+use internment::Intern;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Ident {

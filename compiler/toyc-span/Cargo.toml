@@ -8,6 +8,6 @@ license = "MIT OR APACHE"
 publish = false
 
 [dependencies]
-chumsky = "0.8.0"
+chumsky = { version = "0.8.0", default-features = false }
 internment = "0.6.0"
-serde = { version = "1.0.136", features = ["derive"] }
+serde = { version = "1.0.136", default-features = false, features = ["derive"] }
