@@ -32,7 +32,7 @@ fn make_str_lit(lexer: &mut Lexer<Token>) -> StrLit {
 fn make_num_lit(lexer: &mut Lexer<Token>) -> Result<NumLit, NumLitErr> {
   let slice = lexer.slice();
 
-  let prefix = if slice[0..=0] != *"0" {
+  let prefix = if slice.len() < 3 || slice[0..=0] != *"0" {
     None
   } else {
     match &slice[1..=1] {
