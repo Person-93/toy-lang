@@ -45,3 +45,129 @@ mod private {
 // the usual sizes of pages and huge pages on Linux.
 const PAGE: usize = 4096;
 const HUGE_PAGE: usize = 2 * 1024 * 1024;
+
+#[macro_export]
+macro_rules! declare_arena {
+    (
+      $(#[$attr:meta])*
+      $visibility: vis struct $arena:ident<'a> {
+        $($alias:ident: $typed:ty),*,
+      }
+      $($anon:ty)*
+  ) => {
+    $(#[$attr])*
+    #[derive(Default)]
+    $visibility struct $arena<'a> {
+      $($alias: $crate::TypedArena<$typed>),*,
+      __anon: $crate::DroplessArena,
+    }
+
+    #[allow(clippy::mut_from_ref)]
+    const _: () = {
+      use $crate::Arena as _;
+
+      impl<'a> $arena<'a> {
+        fn alloc<T: Dispatch<'a>>(&self, object: T) -> &mut T {
+          object.dispatch_one(self)
+        }
+
+        fn alloc_iter<I>(&self, iter: I) -> &mut [I::Item]
+        where
+          I: IntoIterator,
+          <I as IntoIterator>::Item: Dispatch<'a>
+        {
+          <<I as IntoIterator>::Item as Dispatch<'a>>::dispatch_iter(iter, self)
+        }
+      }
+
+      $visibility trait Dispatch<'a>: Sized {
+        fn dispatch_one<'b>(self, arena: &'b $arena<'a>) -> &'b mut Self;
+
+        fn dispatch_iter<'b, I>(iter: I, arena: &'b $arena<'a>) -> &'b mut[Self]
+        where
+          I: IntoIterator<Item = Self>;
+      }
+
+      $(
+        #[automatically_derived]
+        impl<'a> Dispatch<'a> for $typed {
+          fn dispatch_one<'b>(self, arena: &'b $arena<'a>) -> &'b mut Self {
+            arena.$alias.alloc(self)
+          }
+
+          fn dispatch_iter<'b, I>(iter: I, arena: &'b $arena<'a>) -> &'b mut[Self]
+            where
+              I: IntoIterator<Item = Self>,
+            {
+              arena.$alias.alloc_iter(iter)
+            }
+          }
+        )*
+
+        $(
+          #[automatically_derived]
+          impl<'a> Dispatch<'a> for $anon {
+            fn dispatch_one<'b>(self, arena: &'b $arena<'a>) -> &'b mut Self {
+              arena.__anon.alloc(self)
+            }
+
+            fn dispatch_iter<'b, I>(iter: I, arena: &'b $arena<'a>) -> &'b mut[Self]
+            where
+              I: IntoIterator<Item = Self>,
+            {
+              arena.__anon.alloc_iter(iter)
+            }
+          }
+        )*
+      };
+    };
+}
+
+#[cfg(test)]
+//noinspection DuplicatedCode
+mod tests {
+  use super::*;
+  use alloc::vec::Vec;
+  use core::cell::Cell;
+
+  declare_arena! {
+    struct Arena<'a> {
+      d: DropCounter<'a>,
+    }
+    i128
+  }
+
+  #[test]
+  fn test_macro_drop() {
+    let drop_count = Cell::new(0);
+    {
+      let arena = Arena::default();
+      for _ in 0..100 {
+        arena.alloc(DropCounter(&drop_count));
+      }
+    }
+    assert_eq!(drop_count.get(), 100);
+  }
+
+  #[test]
+  fn test_macro_drop_iter() {
+    let drop_count = Cell::new(0);
+    {
+      let arena = Arena::default();
+      let mut vec = Vec::with_capacity(100);
+      for _ in 0..100 {
+        vec.push(DropCounter(&drop_count));
+      }
+      arena.alloc_iter(vec);
+    }
+    assert_eq!(drop_count.get(), 100);
+  }
+
+  struct DropCounter<'a>(&'a Cell<u32>);
+
+  impl Drop for DropCounter<'_> {
+    fn drop(&mut self) {
+      self.0.set(self.0.get() + 1);
+    }
+  }
+}
