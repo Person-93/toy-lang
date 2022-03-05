@@ -1,3 +1,5 @@
+mod iter;
+
 use crate::{private::Sealed, Arena, HUGE_PAGE, PAGE};
 use alloc::{alloc::alloc, alloc::Layout, boxed::Box, vec::Vec};
 use core::{
@@ -73,22 +75,31 @@ impl<T> TypedArena<T> {
     }
   }
 
+  pub fn iter(&self) -> iter::ArenaIter<T> {
+    unsafe {
+      if let Some(last_chunk) = self.chunks.borrow_mut().last_mut() {
+        // set the entries count in the last chunk to make iteration simpler
+        last_chunk.entries =
+          self.ptr.get().offset_from(last_chunk.start()) as usize;
+      }
+      iter::ArenaIter::new(self)
+    }
+  }
+
   #[cold]
   #[inline(never)]
   fn grow(&self, additional: usize) {
     assert_ne!(mem::size_of::<T>(), 0);
     unsafe {
-      let obj_size = cmp::max(1, mem::size_of::<T>());
+      let obj_size = mem::size_of::<T>();
       let mut chunks = self.chunks.borrow_mut();
 
       let mut new_chunk_size;
 
       if let Some(last_chunk) = chunks.last_mut() {
         // finalized info of last chunk
-        if mem::needs_drop::<T>() {
-          last_chunk.entries =
-            self.ptr.get().offset_from(self.end.get()) as usize;
-        }
+        last_chunk.entries =
+          self.ptr.get().offset_from(last_chunk.start()) as usize;
 
         new_chunk_size =
           cmp::min(HUGE_PAGE / obj_size, last_chunk.storage.len() * 2);
