@@ -53,16 +53,16 @@ impl<'hir> Node<'hir> {
   }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug)]
 pub enum Item<'hir> {
-  Mod(&'hir Mod<'hir>),
-  Function(&'hir Function<'hir>),
-  Enum(&'hir EnumDef<'hir>),
-  Struct(&'hir StructDef<'hir>),
+  Mod(Mod<'hir>),
+  Function(Function<'hir>),
+  Enum(EnumDef<'hir>),
+  Struct(StructDef<'hir>),
 }
 
 impl<'hir> Item<'hir> {
-  pub fn id(self) -> HirId<'hir> {
+  pub fn id(&self) -> HirId<'hir> {
     match self {
       Item::Mod(mod_) => mod_.id,
       Item::Function(function) => function.id,
@@ -71,7 +71,7 @@ impl<'hir> Item<'hir> {
     }
   }
 
-  pub fn span(self) -> Span {
+  pub fn span(&self) -> Span {
     match self {
       Item::Mod(mod_) => mod_.span,
       Item::Function(function) => function.span,
