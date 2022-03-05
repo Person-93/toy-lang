@@ -8,4 +8,5 @@ license = "MIT OR APACHE"
 publish = false
 
 [dependencies]
+toyc-arena = { path = "../toyc-arena" }
 toyc-span = { path = "../toyc-span" }

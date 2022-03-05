@@ -690,6 +690,7 @@ dependencies = [
 name = "toyc-hir"
 version = "0.0.0"
 dependencies = [
+ "toyc-arena",
  "toyc-span",
 ]
 
