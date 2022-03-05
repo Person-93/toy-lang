@@ -11,7 +11,7 @@ use core::{
 
 pub struct TypedArena<T> {
   /// A pointer to the next object to be allocated.
-  /// If `T` is a ZST it is just the count of allocated types.
+  /// If `T` is a ZST it is just the count of "allocated" items.
   ptr: Cell<*mut T>,
   /// A pointer to the end of the current chunk's allocated space.
   end: Cell<*mut T>,
@@ -48,13 +48,18 @@ impl<T> Arena<T> for TypedArena<T> {
 impl<T> Sealed<T> for TypedArena<T> {
   //noinspection DuplicatedCode
   unsafe fn alloc_uninit_slice(&self, len: usize) -> *mut T {
-    let ptr = self.ptr.get();
-    if (self.end.get().offset_from(ptr) as usize) < len {
-      self.grow(len);
-      self.ptr.get()
+    if mem::size_of::<T>() == 0 {
+      self.ptr.set((self.ptr.get() as usize + len) as _);
+      NonNull::dangling().as_ptr()
     } else {
-      self.ptr.set(ptr.add(len));
-      ptr
+      let ptr = self.ptr.get();
+      if (self.end.get().offset_from(ptr) as usize) < len {
+        self.grow(len);
+        self.ptr.replace(self.ptr.get().add(len))
+      } else {
+        self.ptr.set(ptr.add(len));
+        ptr
+      }
     }
   }
 }
@@ -71,6 +76,7 @@ impl<T> TypedArena<T> {
   #[cold]
   #[inline(never)]
   fn grow(&self, additional: usize) {
+    assert_ne!(mem::size_of::<T>(), 0);
     unsafe {
       let obj_size = cmp::max(1, mem::size_of::<T>());
       let mut chunks = self.chunks.borrow_mut();
@@ -80,9 +86,8 @@ impl<T> TypedArena<T> {
       if let Some(last_chunk) = chunks.last_mut() {
         // finalized info of last chunk
         if mem::needs_drop::<T>() {
-          let used_bytes =
-            self.ptr.get() as usize - last_chunk.start() as usize;
-          last_chunk.entries = used_bytes / obj_size
+          last_chunk.entries =
+            self.ptr.get().offset_from(self.end.get()) as usize;
         }
 
         new_chunk_size =
@@ -120,7 +125,7 @@ impl<T> Drop for TypedArena<T> {
         // we only update the old one when we move on to the next one
         if let Some(last_chunk) = chunks.last_mut() {
           last_chunk.entries =
-            self.ptr.get().offset_from(last_chunk.start()).abs() as usize;
+            self.ptr.get().offset_from(last_chunk.start()) as usize;
         }
 
         for chunk in chunks.iter_mut() {
@@ -140,7 +145,7 @@ struct ArenaChunk<T> {
 impl<T> ArenaChunk<T> {
   #[inline]
   unsafe fn new(capacity: usize) -> ArenaChunk<T> {
-    assert!(mem::size_of::<T>() > 0);
+    assert_ne!(mem::size_of::<T>(), 0);
     ArenaChunk {
       storage: Box::from_raw(slice::from_raw_parts_mut(
         alloc(
@@ -181,9 +186,10 @@ impl<T> ArenaChunk<T> {
 }
 
 #[cfg(test)]
+//noinspection DuplicatedCode
 mod tests {
   use super::*;
-  use alloc::string::String;
+  use alloc::{string::String, vec::Vec};
 
   #[test]
   fn test_returns_ref_to_param() {
@@ -228,6 +234,21 @@ mod tests {
     assert_eq!(counter.get(), 100);
   }
 
+  #[test]
+  fn test_drop_iter() {
+    let counter = Cell::new(0);
+    {
+      let arena = TypedArena::default();
+      let mut vec = Vec::with_capacity(100);
+      for _ in 0..100 {
+        vec.push(DropCounter { counter: &counter });
+      }
+      arena.alloc_iter(vec);
+      assert_eq!(counter.get(), 0);
+    }
+    assert_eq!(counter.get(), 100);
+  }
+
   struct DropCounter<'a> {
     counter: &'a Cell<u32>,
   }
@@ -249,6 +270,21 @@ mod tests {
       assert_eq!(DROP_COUNTER.with(|counter| counter.get()), 0);
     }
     assert_eq!(DROP_COUNTER.with(|counter| counter.get()), 100);
+  }
+
+  #[test]
+  fn test_drop_zst_iter() {
+    let counter = Cell::new(0);
+    {
+      let arena = TypedArena::default();
+      let mut vec = Vec::with_capacity(100);
+      for _ in 0..100 {
+        vec.push(DropCounter { counter: &counter });
+      }
+      arena.alloc_iter(vec);
+      assert_eq!(counter.get(), 0);
+    }
+    assert_eq!(counter.get(), 100);
   }
 
   struct DroppableZst;
