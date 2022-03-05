@@ -1,6 +1,4 @@
-mod iter;
-
-use crate::{private::Sealed, Arena, HUGE_PAGE, PAGE};
+use crate::{impl_for_base, ArenaBase, HUGE_PAGE, PAGE};
 use alloc::{alloc::alloc, alloc::Layout, boxed::Box, vec::Vec};
 use core::{
   cell::{Cell, RefCell},
@@ -10,6 +8,8 @@ use core::{
   ptr::NonNull,
   slice,
 };
+
+mod iter;
 
 pub struct TypedArena<T> {
   /// A pointer to the next object to be allocated.
@@ -21,7 +21,8 @@ pub struct TypedArena<T> {
   chunks: RefCell<Vec<ArenaChunk<T>>>,
 }
 
-impl<T> Arena<T> for TypedArena<T> {
+impl_for_base!(TypedArena<T>);
+impl<T> ArenaBase<T> for TypedArena<T> {
   #[inline]
   fn alloc(&self, object: T) -> &mut T {
     if mem::size_of::<T>() == 0 {
@@ -45,9 +46,7 @@ impl<T> Arena<T> for TypedArena<T> {
       &mut *ptr
     }
   }
-}
 
-impl<T> Sealed<T> for TypedArena<T> {
   //noinspection DuplicatedCode
   unsafe fn alloc_uninit_slice(&self, len: usize) -> *mut T {
     if mem::size_of::<T>() == 0 {
@@ -199,8 +198,10 @@ impl<T> ArenaChunk<T> {
 #[cfg(test)]
 //noinspection DuplicatedCode
 mod tests {
-  use super::*;
+  use super::TypedArena;
+  use crate::Arena;
   use alloc::{string::String, vec::Vec};
+  use core::cell::Cell;
 
   #[test]
   fn test_returns_ref_to_param() {

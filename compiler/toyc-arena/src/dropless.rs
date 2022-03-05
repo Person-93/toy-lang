@@ -1,4 +1,4 @@
-use crate::{private::Sealed, Arena, HUGE_PAGE, PAGE};
+use crate::{impl_for_base, ArenaBase, HUGE_PAGE, PAGE};
 use alloc::{
   alloc::{alloc, Layout},
   boxed::Box,
@@ -22,7 +22,8 @@ pub struct DroplessArena {
   pages: RefCell<Vec<Box<[u8]>>>,
 }
 
-impl<T> Arena<T> for DroplessArena {
+impl_for_base!(DroplessArena);
+impl<T> ArenaBase<T> for DroplessArena {
   #[inline]
   fn alloc(&self, object: T) -> &mut T {
     assert!(!mem::needs_drop::<T>());
@@ -57,9 +58,7 @@ impl<T> Arena<T> for DroplessArena {
       }
     }
   }
-}
 
-impl<T> Sealed<T> for DroplessArena {
   //noinspection DuplicatedCode
   unsafe fn alloc_uninit_slice(&self, len: usize) -> *mut T {
     let ptr = self.ptr.get();
@@ -114,7 +113,8 @@ impl Default for DroplessArena {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+  use super::DroplessArena;
+  use crate::Arena;
 
   #[test]
   fn test_returns_ref_to_param() {

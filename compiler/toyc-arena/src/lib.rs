@@ -6,37 +6,57 @@ extern crate std;
 extern crate alloc;
 
 pub use self::{dropless::DroplessArena, typed::TypedArena};
-use alloc::boxed::Box;
-use core::{ptr, slice};
-use smallvec::SmallVec;
 
 mod dropless;
 mod typed;
 
-pub trait Arena<T>: Default + private::Sealed<T> {
+pub trait Arena<T>: Default {
   #[allow(clippy::mut_from_ref)]
   fn alloc(&self, object: T) -> &mut T;
 
   #[allow(clippy::mut_from_ref)]
-  fn alloc_iter<I: IntoIterator<Item = T>>(&self, iterable: I) -> &mut [T] {
-    unsafe {
-      let buffer =
-        Box::leak(SmallVec::<[_; 8]>::from_iter(iterable).into_boxed_slice());
-      let ptr = self.alloc_uninit_slice(buffer.len());
-      ptr::copy(buffer as *mut [T] as *mut T, ptr, buffer.len());
-      &mut *slice::from_raw_parts_mut(ptr, buffer.len())
-    }
-  }
+  fn alloc_iter<I: IntoIterator<Item = T>>(&self, iterable: I) -> &mut [T];
 }
 
-mod private {
-  pub trait Sealed<T> {
-    /// # Safety
-    /// The memory must be initialized before the arena is dropped.
-    #[allow(clippy::mut_from_ref)]
-    unsafe fn alloc_uninit_slice(&self, len: usize) -> *mut T;
-  }
+trait ArenaBase<T>: Default {
+  #[allow(clippy::mut_from_ref)]
+  fn alloc(&self, object: T) -> &mut T;
+
+  /// # Safety
+  /// The memory must be initialized before the arena is dropped.
+  #[allow(clippy::mut_from_ref)]
+  unsafe fn alloc_uninit_slice(&self, len: usize) -> *mut T;
 }
+
+macro_rules! impl_for_base {
+  ($ty:ty) => {
+    const _: () = {
+      use crate::{Arena, ArenaBase};
+      use ::smallvec::SmallVec;
+
+      impl<T> Arena<T> for $ty {
+        fn alloc(&self, object: T) -> &mut T {
+          ArenaBase::alloc(self, object)
+        }
+
+        fn alloc_iter<I: IntoIterator<Item = T>>(
+          &self,
+          iterable: I,
+        ) -> &mut [T] {
+          unsafe {
+            let buffer = Box::leak(
+              SmallVec::<[_; 8]>::from_iter(iterable).into_boxed_slice(),
+            );
+            let ptr = self.alloc_uninit_slice(buffer.len());
+            ptr::copy(buffer as *mut [T] as *mut T, ptr, buffer.len());
+            &mut *slice::from_raw_parts_mut(ptr, buffer.len())
+          }
+        }
+      }
+    };
+  };
+}
+pub(crate) use impl_for_base;
 
 // The arenas start with PAGE-sized chunks, and then each new chunk is twice as
 // big as its predecessor, up until we reach HUGE_PAGE-sized chunks, whereupon
