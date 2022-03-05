@@ -1,45 +1,61 @@
-use clap::Parser;
-use std::{fs, io, path::PathBuf, process};
+use clap::{ArgGroup, Parser};
+use std::{
+  fs,
+  io::{self, Read},
+  path::PathBuf,
+  process,
+};
 use toyc_errors::emitter::JsonWriterEmitter;
 use toyc_session::Session;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about)]
+#[clap(group(ArgGroup::new("src").required(true).args(&["input", "stdin"])))]
 struct Cli {
   /// The path of the file to compile
-  input: PathBuf,
+  input: Option<PathBuf>,
 
   /// The path of the output file (not including the file extension)
   #[clap(default_value = "a.out")]
   output: PathBuf,
+
+  /// Read from stdin instead of a file
+  #[clap(long, conflicts_with("input"))]
+  stdin: bool,
 }
 
 fn main() -> ! {
-  let Cli { input, output } = Cli::parse();
+  let Cli {
+    input,
+    output,
+    stdin: _,
+  } = Cli::parse();
   let session = Session::new(
     output.file_name().unwrap().to_str().unwrap().to_owned(),
-    Some(input),
+    input,
     toyc_errors::Handler::new(Box::new(JsonWriterEmitter::new(
       io::stderr(),
       true,
     ))),
   );
 
-  let text =
-    match fs::read_to_string(session.root_source_file.as_ref().unwrap()) {
-      Ok(text) => text,
-      Err(err) => {
-        session
-          .handler
-          .fatal(format!(
-            "failed to read input file `{}`",
-            session.root_source_file.as_ref().unwrap().display()
-          ))
-          .attach_note(format!("caused by {err}"))
-          .emit();
-        process::exit(1);
-      }
-    };
+  let text = match match &session.root_source_file {
+    Some(input) => fs::read_to_string(input),
+    None => {
+      let mut text = String::new();
+      io::stdin().read_to_string(&mut text).map(|_| text)
+    }
+  } {
+    Ok(text) => text,
+    Err(err) => {
+      session
+        .handler
+        .fatal("failed to read package root file")
+        .attach_note(format!("caused by {err}"))
+        .emit();
+      process::exit(1);
+    }
+  };
 
   let ast = toyc_ast::parse_single_file(&text, &session.handler);
   let ast = match ast {
