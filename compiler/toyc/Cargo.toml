@@ -9,10 +9,6 @@ publish = false
 
 [dependencies]
 clap = { version = "3.1.5", features = ["derive"] }
-# TODO toyc does not need to directly depend on toyc-arena
-#       temporarily done so it gets compiled and tested with
-#       everything else
-toyc-arena = { path = "../toyc-arena" }
 toyc-ast = { path = "../toyc-ast" }
 toyc-ast-passes = { path = "../toyc-ast-passes" }
 toyc-errors = { path = "../toyc-errors" }
