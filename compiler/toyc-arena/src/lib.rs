@@ -70,52 +70,79 @@ const HUGE_PAGE: usize = 2 * 1024 * 1024;
 macro_rules! declare_arena {
     (
       $(#[$attr:meta])*
-      $visibility: vis struct $arena:ident<'a> {
-        $($alias:ident: $typed:ty),*,
+      $visibility:vis struct $arena:ident<$lifetime:lifetime> {
+        $(
+          $(#[$field_attr:meta])*
+          $field_vis:vis $field:ident: $field_ty:ty
+        ),+,
       }
-      $($anon:ty)*
+      Typed {
+        $($typed_vis:vis $alias:ident: $typed:ty),*,
+      }
+      $($dropless:ident { $($anon:ty)* })*
   ) => {
     $(#[$attr])*
-    #[derive(Default)]
-    $visibility struct $arena<'a> {
+    $visibility struct $arena<$lifetime> {
+      $(
+        $(#[$field_attr])*
+        $field_vis $field: $field_ty
+      ),+,
+
       $($alias: $crate::TypedArena<$typed>),*,
-      __anon: $crate::DroplessArena,
+      $($dropless: $crate::DroplessArena),*
+    }
+
+    #[allow(dead_code)]
+    impl<$lifetime> $arena<$lifetime> {
+      $(
+        $typed_vis fn $alias(
+          &$lifetime self,
+        ) -> impl Iterator<Item = &$lifetime $typed> + $lifetime {
+          self.$alias.iter()
+        }
+      )*
     }
 
     #[allow(clippy::mut_from_ref)]
     const _: () = {
       use $crate::Arena as _;
 
-      impl<'a> $arena<'a> {
-        fn alloc<T: Dispatch<'a>>(&self, object: T) -> &mut T {
+      impl<$lifetime, __T: Dispatch<$lifetime>> $crate::Arena<__T> for $arena<$lifetime> {
+        fn alloc(&self, object: __T) -> &mut __T {
           object.dispatch_one(self)
         }
 
         fn alloc_iter<I>(&self, iter: I) -> &mut [I::Item]
         where
           I: IntoIterator,
-          <I as IntoIterator>::Item: Dispatch<'a>
+          <I as IntoIterator>::Item: Dispatch<$lifetime>
         {
-          <<I as IntoIterator>::Item as Dispatch<'a>>::dispatch_iter(iter, self)
+          <<I as IntoIterator>::Item as Dispatch<$lifetime>>::dispatch_iter(iter, self)
         }
       }
 
-      $visibility trait Dispatch<'a>: Sized {
-        fn dispatch_one<'b>(self, arena: &'b $arena<'a>) -> &'b mut Self;
+      $visibility trait Dispatch<$lifetime>: Sized {
+        fn dispatch_one<'__arena>(self, arena: &'__arena $arena<$lifetime>) -> &'__arena mut Self;
 
-        fn dispatch_iter<'b, I>(iter: I, arena: &'b $arena<'a>) -> &'b mut[Self]
+        fn dispatch_iter<'__arena, I>(iter: I, arena: &'__arena $arena<$lifetime>) -> &'__arena mut[Self]
         where
           I: IntoIterator<Item = Self>;
       }
 
       $(
         #[automatically_derived]
-        impl<'a> Dispatch<'a> for $typed {
-          fn dispatch_one<'b>(self, arena: &'b $arena<'a>) -> &'b mut Self {
+        impl<$lifetime> Dispatch<$lifetime> for $typed {
+          fn dispatch_one<'__arena>(
+            self,
+            arena: &'__arena $arena<$lifetime>,
+          ) -> &'__arena mut Self {
             arena.$alias.alloc(self)
           }
 
-          fn dispatch_iter<'b, I>(iter: I, arena: &'b $arena<'a>) -> &'b mut[Self]
+          fn dispatch_iter<'__arena, I>(
+            iter: I,
+            arena: &'__arena $arena<$lifetime>,
+          ) -> &'__arena mut[Self]
             where
               I: IntoIterator<Item = Self>,
             {
@@ -124,21 +151,27 @@ macro_rules! declare_arena {
           }
         )*
 
-        $(
+        $($(
           #[automatically_derived]
-          impl<'a> Dispatch<'a> for $anon {
-            fn dispatch_one<'b>(self, arena: &'b $arena<'a>) -> &'b mut Self {
-              arena.__anon.alloc(self)
+          impl<$lifetime> Dispatch<$lifetime> for $anon {
+            fn dispatch_one<'__arena>(
+              self,
+              arena: &'__arena $arena<$lifetime>,
+            ) -> &'__arena mut Self {
+              arena.$dropless.alloc(self)
             }
 
-            fn dispatch_iter<'b, I>(iter: I, arena: &'b $arena<'a>) -> &'b mut[Self]
+            fn dispatch_iter<'__arena, I>(
+              iter: I,
+              arena: &'__arena $arena<$lifetime>,
+            ) -> &'__arena mut[Self]
             where
               I: IntoIterator<Item = Self>,
             {
-              arena.__anon.alloc_iter(iter)
+              arena.$dropless.alloc_iter(iter)
             }
           }
-        )*
+        )*)*
       };
     };
 }
@@ -146,15 +179,17 @@ macro_rules! declare_arena {
 #[cfg(test)]
 //noinspection DuplicatedCode
 mod tests {
-  use super::*;
+  use super::Arena as _;
   use alloc::vec::Vec;
   use core::cell::Cell;
 
   declare_arena! {
-    struct Arena<'a> {
-      d: DropCounter<'a>,
-    }
-    i128
+    #[derive(Default)]
+    struct Arena<'a> { _m: (), }
+
+    Typed { d: DropCounter<'a>, }
+
+    dropless { i128 }
   }
 
   #[test]
