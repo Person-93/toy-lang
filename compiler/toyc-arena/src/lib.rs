@@ -109,81 +109,41 @@ macro_rules! declare_arena {
 
     #[allow(clippy::mut_from_ref)]
     const _: () = {
-      use $crate::Arena as _;
-
-      impl<$lifetime, __T> $crate::Arena<$lifetime, __T> for $arena<$lifetime>
-      where
-        __T: Dispatch<$lifetime> + $lifetime
-      {
-        fn alloc(&self, object: __T) -> &$lifetime mut __T {
-          object.dispatch_one(self)
-        }
-
-        fn alloc_iter<I>(&self, iter: I) -> &$lifetime mut [I::Item]
-        where
-          I: IntoIterator<Item = __T>,
-          <I as IntoIterator>::Item: Dispatch<$lifetime> + $lifetime
-        {
-          <<I as IntoIterator>::Item as Dispatch<$lifetime>>::dispatch_iter(iter, self)
-        }
-      }
-
-      $visibility trait Dispatch<$lifetime>: Sized {
-        fn dispatch_one(self, arena: &$arena<$lifetime>) -> &$lifetime mut Self;
-
-        fn dispatch_iter<I>(iter: I, arena: &$arena<$lifetime>) -> &$lifetime mut[Self]
-        where
-          I: IntoIterator<Item = Self>,
-          <I as IntoIterator>::Item: $lifetime;
-      }
-
       $(
         #[automatically_derived]
-        impl<$lifetime> Dispatch<$lifetime> for $typed {
-          fn dispatch_one(
-            self,
-            arena: &$arena<$lifetime>,
-          ) -> &$lifetime mut Self {
-            arena.$alias.alloc(self)
+        impl<$lifetime> $crate::Arena<$lifetime, $typed> for $arena<$lifetime> {
+          fn alloc(&self, object: $typed) -> &$lifetime mut $typed {
+            self.$alias.alloc(object)
           }
 
-          fn dispatch_iter<I>(
-            iter: I,
-            arena: &$arena<$lifetime>,
-          ) -> &$lifetime mut[Self]
-            where
-              I: IntoIterator<Item = Self>,
-              <I as IntoIterator>::Item: $lifetime,
-            {
-              arena.$alias.alloc_iter(iter)
-            }
+          fn alloc_iter<I>(&self, iter: I) -> &$lifetime mut [I::Item]
+          where
+            I: IntoIterator<Item = $typed>,
+            <I as IntoIterator>::Item: $lifetime
+          {
+            self.$alias.alloc_iter(iter)
           }
-        )*
+        }
+      )*
 
-        $($(
-          #[automatically_derived]
-          impl<$lifetime> Dispatch<$lifetime> for $anon {
-            fn dispatch_one(
-              self,
-              arena: &$arena<$lifetime>,
-            ) -> &$lifetime mut Self {
-              arena.$dropless.alloc(self)
-            }
-
-            fn dispatch_iter<I>(
-              iter: I,
-              arena: &$arena<$lifetime>,
-            ) -> &$lifetime mut[Self]
-            where
-              I: IntoIterator<Item = Self>,
-              <I as IntoIterator>::Item: $lifetime,
-            {
-              arena.$dropless.alloc_iter(iter)
-            }
+      $($(
+        #[automatically_derived]
+        impl<$lifetime> $crate::Arena<$lifetime, $anon> for $arena<$lifetime> {
+          fn alloc(&self, object: $anon) -> &$lifetime mut $anon {
+            self.$dropless.alloc(object)
           }
-        )*)*
-      };
+
+          fn alloc_iter<I>(&self, iter: I) -> &$lifetime mut [I::Item]
+          where
+            I: IntoIterator<Item = $anon>,
+            <I as IntoIterator>::Item: $lifetime
+          {
+            self.$dropless.alloc_iter(iter)
+          }
+        }
+      )*)*
     };
+  };
 }
 
 #[cfg(test)]
