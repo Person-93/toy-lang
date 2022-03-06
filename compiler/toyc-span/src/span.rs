@@ -11,14 +11,30 @@ pub struct Span {
 }
 
 impl Span {
-  pub fn shrink_to_lo(mut self) -> Self {
+  pub const DUMMY: Span = Span {
+    lo: BytePos(u32::MAX),
+    hi: BytePos(u32::MAX),
+  };
+
+  pub const fn shrink_to_lo(mut self) -> Self {
     self.hi = self.lo;
     self
   }
 
-  pub fn shrink_to_hi(mut self) -> Self {
+  pub const fn shrink_to_hi(mut self) -> Self {
     self.lo = self.hi;
     self
+  }
+
+  pub const fn is_dummy(self) -> bool {
+    self.lo.0 == u32::MAX && self.hi.0 == u32::MAX
+  }
+
+  pub const fn combine(self, other: Span) -> Span {
+    Span {
+      lo: min(self.lo, other.lo),
+      hi: max(self.hi, other.hi),
+    }
   }
 }
 
@@ -53,6 +69,22 @@ impl chumsky::Span for Span {
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize)]
 #[serde(transparent)]
 pub struct BytePos(pub u32);
+
+const fn min(a: BytePos, b: BytePos) -> BytePos {
+  if a.0 < b.0 {
+    a
+  } else {
+    b
+  }
+}
+
+const fn max(a: BytePos, b: BytePos) -> BytePos {
+  if a.0 > b.0 {
+    a
+  } else {
+    b
+  }
+}
 
 impl Display for BytePos {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
