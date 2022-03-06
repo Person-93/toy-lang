@@ -38,6 +38,10 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                                                             val: 42,
                                                             decimal: None,
                                                             ty: None,
+                                                            span: Span {
+                                                                lo: 32,
+                                                                hi: 34,
+                                                            },
                                                         },
                                                     ),
                                                     args: None,
