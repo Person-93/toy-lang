@@ -1,0 +1,14 @@
+---
+source: compiler/toyc-ast-lowering/tests/ast-lowering.rs
+assertion_line: 9
+expression: ctx.lower_package(&ast)
+
+---
+Package {
+    attrs: [],
+    items: [],
+    span: Span {
+        lo: 0,
+        hi: 0,
+    },
+}

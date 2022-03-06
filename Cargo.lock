@@ -580,6 +580,9 @@ name = "test-util"
 version = "0.1.0-dev"
 dependencies = [
  "insta",
+ "parking_lot",
+ "toyc-errors",
+ "toyc-session",
 ]
 
 [[package]]
@@ -668,6 +671,7 @@ dependencies = [
 name = "toyc-ast-lowering"
 version = "0.0.0"
 dependencies = [
+ "test-util",
  "toyc-arena",
  "toyc-ast",
  "toyc-hir",

@@ -1,0 +1,48 @@
+---
+source: compiler/toyc-ast-lowering/tests/ast-lowering.rs
+assertion_line: 9
+expression: ctx.lower_package(&ast)
+
+---
+Package {
+    attrs: [],
+    items: [
+        Function(
+            Function {
+                id: HirId(
+                    1,
+                    PhantomData,
+                    PhantomData,
+                ),
+                ident: f @ 3..4,
+                visibility: Inherited,
+                fn_type: FnType {
+                    extern_: No,
+                    unsafety: No,
+                    constness: No,
+                    generics: None,
+                    inputs: [],
+                    output: Default,
+                    self_kind: None,
+                },
+                body_id: Some(
+                    BodyId(
+                        HirId(
+                            2,
+                            PhantomData,
+                            PhantomData,
+                        ),
+                    ),
+                ),
+                span: Span {
+                    lo: 0,
+                    hi: 10,
+                },
+            },
+        ),
+    ],
+    span: Span {
+        lo: 0,
+        hi: 10,
+    },
+}

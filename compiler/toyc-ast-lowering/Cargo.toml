@@ -13,3 +13,11 @@ toyc-ast = { path = "../toyc-ast" }
 toyc-hir = { path = "../toyc-hir" }
 toyc-session = { path = "../toyc-session" }
 toyc-span = { path = "../toyc-span" }
+
+[dev-dependencies]
+test-util = { path = "../../src/test-util" }
+
+[[test]]
+name = "ast-lowering"
+path = "tests/ast-lowering.rs"
+harness = false

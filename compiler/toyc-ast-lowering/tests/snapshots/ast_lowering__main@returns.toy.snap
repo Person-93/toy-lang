@@ -1,0 +1,129 @@
+---
+source: compiler/toyc-ast-lowering/tests/ast-lowering.rs
+assertion_line: 9
+expression: ctx.lower_package(&ast)
+
+---
+Package {
+    attrs: [],
+    items: [
+        Function(
+            Function {
+                id: HirId(
+                    1,
+                    PhantomData,
+                    PhantomData,
+                ),
+                ident: return_str @ 3..13,
+                visibility: Inherited,
+                fn_type: FnType {
+                    extern_: No,
+                    unsafety: No,
+                    constness: No,
+                    generics: None,
+                    inputs: [],
+                    output: Explicit(
+                        Type {
+                            id: HirId(
+                                3,
+                                PhantomData,
+                                PhantomData,
+                            ),
+                            kind: Ref(
+                                MutType {
+                                    inner: Type {
+                                        id: HirId(
+                                            2,
+                                            PhantomData,
+                                            PhantomData,
+                                        ),
+                                        kind: Primitive(
+                                            Str,
+                                        ),
+                                        span: Span {
+                                            lo: 20,
+                                            hi: 23,
+                                        },
+                                    },
+                                    mutability: No,
+                                },
+                            ),
+                            span: Span {
+                                lo: 20,
+                                hi: 23,
+                            },
+                        },
+                    ),
+                    self_kind: None,
+                },
+                body_id: Some(
+                    BodyId(
+                        HirId(
+                            5,
+                            PhantomData,
+                            PhantomData,
+                        ),
+                    ),
+                ),
+                span: Span {
+                    lo: 0,
+                    hi: 38,
+                },
+            },
+        ),
+        Function(
+            Function {
+                id: HirId(
+                    6,
+                    PhantomData,
+                    PhantomData,
+                ),
+                ident: return_num @ 43..53,
+                visibility: Inherited,
+                fn_type: FnType {
+                    extern_: No,
+                    unsafety: No,
+                    constness: No,
+                    generics: None,
+                    inputs: [],
+                    output: Explicit(
+                        Type {
+                            id: HirId(
+                                7,
+                                PhantomData,
+                                PhantomData,
+                            ),
+                            kind: Primitive(
+                                Int(
+                                    Eight,
+                                ),
+                            ),
+                            span: Span {
+                                lo: 59,
+                                hi: 61,
+                            },
+                        },
+                    ),
+                    self_kind: None,
+                },
+                body_id: Some(
+                    BodyId(
+                        HirId(
+                            10,
+                            PhantomData,
+                            PhantomData,
+                        ),
+                    ),
+                ),
+                span: Span {
+                    lo: 40,
+                    hi: 69,
+                },
+            },
+        ),
+    ],
+    span: Span {
+        lo: 0,
+        hi: 69,
+    },
+}
