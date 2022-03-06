@@ -1,6 +1,6 @@
 use toyc_hir::{
   AnonConst, Attr, AttrData, AttrValue, Expr, FieldDef, GenericParam, HirId,
-  HirIdFactory, Item, Lit, NamedConst, StructDef, TraitItem, Type,
+  HirIdFactory, Item, Literal, NamedConst, StructDef, TraitItem, Type,
 };
 use toyc_session::Session;
 
@@ -18,7 +18,7 @@ toyc_arena::declare_arena! {
   }
   dropless {
     GenericParam<'hir> AnonConst<'hir> Attr<'hir> AttrData<'hir> AttrValue<'hir>
-    Lit<'hir> StructDef<'hir> TraitItem<'hir>
+    Literal<'hir> StructDef<'hir> TraitItem<'hir>
   }
 }
 

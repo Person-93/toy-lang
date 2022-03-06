@@ -1,18 +1,15 @@
 pub use self::context::HirContext;
-use std::{
-  error::Error,
-  fmt::{self, Display, Formatter},
-};
+use core::fmt::{self, Display, Formatter};
+use std::error::Error;
 use toyc_arena::Arena;
 use toyc_ast::ast;
 use toyc_hir::{
-  Abi, AnonConst, Attr, AttrData, AttrKind, AttrValue, AttrValueKind,
-  Constness, EnumDef, Expr, ExprKind, Extern, FieldDef, FloatBits, FnRetTy,
-  FnType, Function, GenericParam, GenericParamKind, GenericParams, IntBits,
-  Item, Lit, LitKind, MutType, Mutability, NumLit, NumLitRadix, NumLitType,
-  Package, PrimitiveType, SelfKind, StructDef, StructDefKind, Trait,
-  TraitConst, TraitItem, TraitType, Type, TypeAlias, TypeKind, Unsafety,
-  Visibility,
+  Abi, AnonConst, Attr, AttrData, AttrKind, AttrValue, Constness, EnumDef,
+  Expr, ExprKind, Extern, FieldDef, FloatBits, FnRetTy, FnType, Function,
+  GenericParam, GenericParamKind, GenericParams, IntBits, Item, LitKind,
+  Literal, MutType, Mutability, NumLit, NumLitRadix, NumLitType, Package,
+  PrimitiveType, SelfKind, StructDef, StructDefKind, Trait, TraitConst,
+  TraitItem, TraitType, Type, TypeAlias, TypeKind, Unsafety, Visibility,
 };
 use toyc_span::symbol::{self, Ident};
 
@@ -42,15 +39,9 @@ impl<'hir> HirContext<'hir> {
       ident: attr_data.ident,
       kind: match &attr_data.kind {
         None => AttrKind::Plain,
-        Some(ast::AttrDataKind::Assign(ast::AttrDataValue::Str(str_lit))) => {
-          AttrKind::Assign(self.alloc(self.lower_string_literal(*str_lit)))
+        Some(ast::AttrDataKind::Assign(literal)) => {
+          AttrKind::Assign(self.alloc(self.lower_literal(literal)))
         }
-        Some(ast::AttrDataKind::Assign(ast::AttrDataValue::Num(num_lit))) => {
-          AttrKind::Assign(self.alloc(self.lower_numeric_literal(*num_lit)))
-        }
-        Some(ast::AttrDataKind::Assign(ast::AttrDataValue::BoolLit(
-          bool_lit,
-        ))) => AttrKind::Assign(self.alloc(self.lower_bool_literal(*bool_lit))),
         Some(ast::AttrDataKind::Call(args)) => AttrKind::Call(self.alloc_iter(
           args.iter().map(|value| self.lower_attr_call_value(value)),
         )),
@@ -65,38 +56,12 @@ impl<'hir> HirContext<'hir> {
     value: &ast::AttrCallValue,
   ) -> AttrValue<'hir> {
     match value {
-      ast::AttrCallValue::AttrDataValue(value) => self.lower_attr_value(value),
-      ast::AttrCallValue::Nested(inner) => {
-        let inner = self.lower_attr_data(inner);
-        AttrValue {
-          id: self.next_id(),
-          span: inner.span,
-          kind: AttrValueKind::Nested(self.alloc(inner)),
-        }
+      ast::AttrCallValue::Literal(literal) => {
+        AttrValue::Lit(self.alloc(self.lower_literal(literal)))
       }
-    }
-  }
-
-  #[must_use]
-  fn lower_attr_value(&self, value: &ast::AttrDataValue) -> AttrValue<'hir> {
-    AttrValue {
-      id: self.next_id(),
-      kind: match value {
-        ast::AttrDataValue::Str(str_lit) => {
-          AttrValueKind::Lit(self.alloc(self.lower_string_literal(*str_lit)))
-        }
-        ast::AttrDataValue::Num(num_lit) => {
-          AttrValueKind::Lit(self.alloc(self.lower_numeric_literal(*num_lit)))
-        }
-        ast::AttrDataValue::BoolLit(bool_lit) => {
-          AttrValueKind::Lit(self.alloc(self.lower_bool_literal(*bool_lit)))
-        }
-      },
-      span: match value {
-        ast::AttrDataValue::Str(str_lit) => str_lit.span,
-        ast::AttrDataValue::Num(num_lit) => num_lit.span,
-        ast::AttrDataValue::BoolLit(bool_lit) => bool_lit.span,
-      },
+      ast::AttrCallValue::Nested(inner) => {
+        AttrValue::Nested(self.alloc(self.lower_attr_data(inner)))
+      }
     }
   }
 
@@ -115,6 +80,7 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   fn lower_function(
     &self,
     function: &ast::Function,
@@ -160,6 +126,7 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   fn lower_struct(
     &self,
     struct_: &ast::Struct,
@@ -178,6 +145,7 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   fn lower_enum(&self, enum_: &ast::Enum, vis: &AstVis) -> EnumDef<'hir> {
     EnumDef {
       id: self.next_id(),
@@ -199,6 +167,7 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   fn lower_struct_fields(
     &self,
     fields: &ast::StructBody,
@@ -230,6 +199,7 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   fn lower_trait(&self, trait_: &ast::Trait, vis: &AstVis) -> Trait<'hir> {
     Trait {
       id: self.next_id(),
@@ -269,6 +239,7 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   fn lower_type_alias(
     &self,
     type_alias: &ast::TypeAlias,
@@ -287,20 +258,33 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   #[allow(clippy::mut_from_ref)]
   fn lower_expr(&self, expr: &ast::Expr) -> Expr<'hir> {
     let (kind, span) = match &expr.primary {
-      ast::ExprFragment::CodeBlock(_) => todo!(),
+      ast::ExprFragment::CodeBlock(codeblock) => (
+        ExprKind::CodeBlock {
+          unsafety: Unsafety::No,
+          constness: Constness::No,
+          statements: self.alloc_iter(
+            codeblock
+              .statements
+              .iter()
+              .map(|statement| self.lower_expr(&statement.expr)),
+          ),
+          trailing: codeblock
+            .trailing
+            .as_ref()
+            .map(|trailing| &*self.alloc(self.lower_expr(trailing))),
+        },
+        codeblock.span,
+      ),
       // TODO how to tell if ExprKind should be an ident or a type?
       ast::ExprFragment::Ident(ident) => (ExprKind::Ident(*ident), ident.span),
-      ast::ExprFragment::StrLit(str_lit) => (
-        ExprKind::Lit(self.alloc(self.lower_string_literal(*str_lit))),
-        str_lit.span,
+      ast::ExprFragment::Literal(literal) => (
+        ExprKind::Lit(self.alloc(self.lower_literal(literal))),
+        literal.span(),
       ),
-      ast::ExprFragment::NumLit(num_lit) => (
-        ExprKind::Lit(self.alloc(self.lower_numeric_literal(*num_lit))),
-        num_lit.span,
-      ), // TODO BoolLit ExprKind?
     };
     let primary = Expr {
       id: self.next_id(),
@@ -320,6 +304,7 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   fn lower_generic_params(
     &self,
     generics: &[ast::GenericParam],
@@ -336,6 +321,7 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   fn lower_generic_param(
     &self,
     generic: &ast::GenericParam,
@@ -366,6 +352,7 @@ impl<'hir> HirContext<'hir> {
     }
   }
 
+  #[must_use]
   fn lower_type(&self, type_: &ast::Type) -> Type<'hir> {
     match type_ {
       ast::Type::Ident(ident) => Type {
@@ -411,53 +398,48 @@ impl<'hir> HirContext<'hir> {
   }
 
   #[must_use]
-  fn lower_string_literal(&self, str_lit: symbol::StrLit) -> Lit<'hir> {
-    Lit {
+  fn lower_literal(&self, literal: &ast::Literal) -> Literal<'hir> {
+    let (kind, span) = match literal {
+      ast::Literal::NumLit(num_lit) => (
+        LitKind::Num(NumLit {
+          type_: match num_lit.ty {
+            Some(symbol::NumLitType::Int(bits)) => {
+              NumLitType::Signed(convert_int_bits(bits).unwrap())
+            }
+            Some(symbol::NumLitType::Unsigned(bits)) => {
+              NumLitType::Unsigned(convert_int_bits(bits).unwrap())
+            }
+            Some(symbol::NumLitType::Float(bits)) => {
+              NumLitType::Float(convert_float_bits(bits).unwrap())
+            }
+            None => NumLitType::Unspecified,
+          },
+          value: num_lit.val,
+          floating: num_lit.decimal,
+          radix: match num_lit.prefix {
+            Some(symbol::NumLitPrefix::Binary) => NumLitRadix::Bin,
+            Some(symbol::NumLitPrefix::Hex) => NumLitRadix::Hex,
+            None => NumLitRadix::Dec,
+          },
+        }),
+        num_lit.span,
+      ),
+      ast::Literal::StrLit(str_lit) => {
+        (LitKind::Str(str_lit.value), str_lit.span)
+      }
+      ast::Literal::BoolLit(bool_lit) => {
+        (LitKind::Bool(bool_lit.value), bool_lit.span)
+      }
+    };
+    Literal {
       id: self.next_id(),
-      kind: LitKind::Str(str_lit.value),
-      span: str_lit.span,
-    }
-  }
-
-  #[must_use]
-  fn lower_numeric_literal(&self, num_lit: symbol::NumLit) -> Lit<'hir> {
-    Lit {
-      id: self.next_id(),
-      kind: LitKind::Num(NumLit {
-        type_: match num_lit.ty {
-          Some(symbol::NumLitType::Int(bits)) => {
-            NumLitType::Signed(convert_int_bits(bits).unwrap())
-          }
-          Some(symbol::NumLitType::Unsigned(bits)) => {
-            NumLitType::Unsigned(convert_int_bits(bits).unwrap())
-          }
-          Some(symbol::NumLitType::Float(bits)) => {
-            NumLitType::Float(convert_float_bits(bits).unwrap())
-          }
-          None => NumLitType::Unspecified,
-        },
-        value: num_lit.val,
-        floating: num_lit.decimal,
-        radix: match num_lit.prefix {
-          Some(symbol::NumLitPrefix::Binary) => NumLitRadix::Bin,
-          Some(symbol::NumLitPrefix::Hex) => NumLitRadix::Hex,
-          None => NumLitRadix::Dec,
-        },
-      }),
-      span: num_lit.span,
-    }
-  }
-
-  #[must_use]
-  fn lower_bool_literal(&self, bool_lit: symbol::BoolLit) -> Lit<'hir> {
-    Lit {
-      id: self.next_id(),
-      kind: LitKind::Bool(bool_lit.value),
-      span: bool_lit.span,
+      kind,
+      span,
     }
   }
 }
 
+#[must_use]
 fn convert_visibility(raw: &AstVis) -> Visibility {
   match raw {
     None => Visibility::Inherited,

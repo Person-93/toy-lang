@@ -32,17 +32,19 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                                             statements: [],
                                             trailing: Some(
                                                 Expr {
-                                                    primary: NumLit(
-                                                        NumLit {
-                                                            prefix: None,
-                                                            val: 42,
-                                                            decimal: None,
-                                                            ty: None,
-                                                            span: Span {
-                                                                lo: 32,
-                                                                hi: 34,
+                                                    primary: Literal(
+                                                        NumLit(
+                                                            NumLit {
+                                                                prefix: None,
+                                                                val: 42,
+                                                                decimal: None,
+                                                                ty: None,
+                                                                span: Span {
+                                                                    lo: 32,
+                                                                    hi: 34,
+                                                                },
                                                             },
-                                                        },
+                                                        ),
                                                     ),
                                                     args: None,
                                                     span: Span {

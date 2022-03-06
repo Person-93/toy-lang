@@ -1,13 +1,10 @@
-use crate::tokens::NumLit;
-use crate::{
-  ast::{
-    AssociatedConst, AssociatedType, AttrData, CodeBlock, ConstParam, Enum,
-    Expr, ExprFragment, Function, FunctionParam, GenericParam, Item, ItemKind,
-    Statement, Struct, StructBody, StructField, Trait, TraitItem,
-    TraitItemKind, TupleField, Type, TypeAlias, TypeParam, Variant, VisKind,
-  },
-  tokens::{Ident, StrLit},
+use crate::ast::{
+  AssociatedConst, AssociatedType, AttrData, CodeBlock, ConstParam, Enum, Expr,
+  ExprFragment, Function, FunctionParam, GenericParam, Item, ItemKind, Literal,
+  Statement, Struct, StructBody, StructField, Trait, TraitItem, TraitItemKind,
+  TupleField, Type, TypeAlias, TypeParam, Variant, VisKind,
 };
+use toyc_span::symbol::{BoolLit, Ident, NumLit, StrLit};
 
 pub trait Visitor {
   fn walk_package(&mut self, attrs: &[AttrData], items: &[Item]) {
@@ -135,9 +132,15 @@ pub trait Visitor {
     walk_associated_const(self, associated_const);
   }
 
-  fn walk_str_lit(&mut self, _str_lit: &StrLit) {}
+  fn walk_literal(&mut self, literal: &Literal) {
+    walk_literal(self, literal);
+  }
 
-  fn walk_num_lit(&mut self, _num_lit: NumLit) {}
+  fn walk_string_literal(&mut self, _str_lit: &StrLit) {}
+
+  fn walk_numeric_literal(&mut self, _num_lit: &NumLit) {}
+
+  fn walk_bool_literal(&mut self, _bool_lit: &BoolLit) {}
 }
 
 pub fn walk_package<V: Visitor + ?Sized>(
@@ -509,8 +512,7 @@ pub fn walk_expr_fragment<V: Visitor + ?Sized>(
   match expr_fragment {
     ExprFragment::CodeBlock(code_block) => visitor.walk_code_block(code_block),
     ExprFragment::Ident(ident) => visitor.walk_ident(*ident),
-    ExprFragment::StrLit(str_lit) => visitor.walk_str_lit(str_lit),
-    ExprFragment::NumLit(num_lit) => visitor.walk_num_lit(*num_lit),
+    ExprFragment::Literal(literal) => visitor.walk_literal(literal),
   }
 }
 
@@ -573,5 +575,13 @@ pub fn walk_associated_const<V: Visitor + ?Sized>(
   visitor.walk_type(type_);
   if let Some(default) = default {
     visitor.walk_expr(default);
+  }
+}
+
+pub fn walk_literal<V: Visitor + ?Sized>(visitor: &mut V, literal: &Literal) {
+  match literal {
+    Literal::NumLit(lit) => visitor.walk_numeric_literal(lit),
+    Literal::StrLit(lit) => visitor.walk_string_literal(lit),
+    Literal::BoolLit(lit) => visitor.walk_bool_literal(lit),
   }
 }

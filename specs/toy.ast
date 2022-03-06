@@ -3,9 +3,8 @@ file = inner_attr*:attrs item*:items EOF
 inner_attr = delim[attr_inner]<attr_data>
 attr = delim[attr]<attr_data>
 attr_data = ident attr_data_kind?:kind
-attr_data_kind = (equals attr_data_value):assign | delim[paren]<attr_call_value,*>:call
-attr_call_value = attr_data_value | attr_data~:nested
-attr_data_value = str_lit:str | num_lit:num | bool_lit
+attr_data_kind = (equals literal):assign | delim[paren]<attr_call_value,*>:call
+attr_call_value = literal | attr_data~:nested
 
 item = attr*:attrs vis? item_kind
 item_kind = function | struct | enum | trait | type_alias
@@ -34,7 +33,7 @@ type_param = ident (equals type)?:default
 generics_args = delim[generics]<type,*>
 
 expr = expr_fragment:primary delim[paren]<expr,*>?:args
-expr_fragment = code_block | ident | str_lit | num_lit
+expr_fragment = code_block | ident | literal
 code_block = delim[brace]<statement*:statements expr~?:trailing>
 statement = attr*:attrs expr semi
 
@@ -50,3 +49,5 @@ trait_item = attr*:attrs trait_item_kind
 trait_item_kind = function | associated_type | associated_const
 associated_type = kw_type ident (equals type)?:default semi
 associated_const = kw_const ident colon type (equals expr)?:default semi
+
+literal = num_lit | str_lit | bool_lit

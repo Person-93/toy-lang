@@ -27,8 +27,10 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                             ),
                             body: Some(
                                 Expr {
-                                    primary: StrLit(
-                                        "hello world",
+                                    primary: Literal(
+                                        StrLit(
+                                            "hello world",
+                                        ),
                                     ),
                                     args: None,
                                     span: Span {
@@ -69,17 +71,19 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                                             statements: [],
                                             trailing: Some(
                                                 Expr {
-                                                    primary: NumLit(
-                                                        NumLit {
-                                                            prefix: None,
-                                                            val: 42,
-                                                            decimal: None,
-                                                            ty: None,
-                                                            span: Span {
-                                                                lo: 65,
-                                                                hi: 67,
+                                                    primary: Literal(
+                                                        NumLit(
+                                                            NumLit {
+                                                                prefix: None,
+                                                                val: 42,
+                                                                decimal: None,
+                                                                ty: None,
+                                                                span: Span {
+                                                                    lo: 65,
+                                                                    hi: 67,
+                                                                },
                                                             },
-                                                        },
+                                                        ),
                                                     ),
                                                     args: None,
                                                     span: Span {

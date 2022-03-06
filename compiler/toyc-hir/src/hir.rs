@@ -34,7 +34,7 @@ impl<'hir> Node<'hir> {
       Node::NamedConst(const_) => const_.id,
       Node::Attr(attr) => attr.id,
       Node::AttrData(data) => data.id,
-      Node::AttrValue(value) => value.id,
+      Node::AttrValue(value) => value.id(),
     }
   }
 
@@ -50,7 +50,7 @@ impl<'hir> Node<'hir> {
       Node::NamedConst(const_) => const_.span,
       Node::Attr(attr) => attr.span,
       Node::AttrData(data) => data.span,
-      Node::AttrValue(value) => value.span,
+      Node::AttrValue(value) => value.span(),
     }
   }
 }
@@ -393,7 +393,7 @@ pub struct Expr<'hir> {
 #[derive(Debug)]
 pub enum ExprKind<'hir> {
   Ident(Ident),
-  Lit(&'hir Lit<'hir>),
+  Lit(&'hir Literal<'hir>),
   CodeBlock {
     unsafety: Unsafety,
     constness: Constness,
@@ -513,25 +513,34 @@ pub struct AttrData<'hir> {
 #[derive(Copy, Clone, Debug)]
 pub enum AttrKind<'hir> {
   Plain,
-  Assign(&'hir Lit<'hir>),
+  Assign(&'hir Literal<'hir>),
   Call(&'hir [AttrValue<'hir>]),
 }
 
-#[derive(Debug)]
-pub struct AttrValue<'hir> {
-  pub id: HirId<'hir>,
-  pub kind: AttrValueKind<'hir>,
-  pub span: Span,
-}
-
 #[derive(Copy, Clone, Debug)]
-pub enum AttrValueKind<'hir> {
-  Lit(&'hir Lit<'hir>),
+pub enum AttrValue<'hir> {
+  Lit(&'hir Literal<'hir>),
   Nested(&'hir AttrData<'hir>),
 }
 
+impl<'hir> AttrValue<'hir> {
+  pub fn id(self) -> HirId<'hir> {
+    match self {
+      AttrValue::Lit(Literal { id, .. })
+      | AttrValue::Nested(AttrData { id, .. }) => *id,
+    }
+  }
+
+  pub fn span(self) -> Span {
+    match self {
+      AttrValue::Lit(Literal { span, .. })
+      | AttrValue::Nested(AttrData { span, .. }) => *span,
+    }
+  }
+}
+
 #[derive(Debug)]
-pub struct Lit<'hir> {
+pub struct Literal<'hir> {
   pub id: HirId<'hir>,
   pub kind: LitKind,
   pub span: Span,
