@@ -645,6 +645,7 @@ version = "0.0.0"
 dependencies = [
  "clap",
  "toyc-ast",
+ "toyc-ast-lowering",
  "toyc-ast-passes",
  "toyc-errors",
  "toyc-hir",
@@ -670,6 +671,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "toyc-ast-lowering"
+version = "0.0.0"
+dependencies = [
+ "toyc-arena",
+ "toyc-ast",
+ "toyc-hir",
+ "toyc-session",
+ "toyc-span",
+]
+
+[[package]]
 name = "toyc-ast-passes"
 version = "0.0.0"
 dependencies = [
@@ -690,7 +702,6 @@ dependencies = [
 name = "toyc-hir"
 version = "0.0.0"
 dependencies = [
- "toyc-arena",
  "toyc-span",
 ]
 

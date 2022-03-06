@@ -1,5 +1,5 @@
 [package]
-name = "toyc-hir"
+name = "toyc-ast-lowering"
 authors = ["person93 <person93.person93@gmail.com>"]
 version = "0.0.0"
 edition = "2021"
@@ -8,4 +8,8 @@ license = "MIT OR APACHE"
 publish = false
 
 [dependencies]
+toyc-arena = { path = "../toyc-arena" }
+toyc-ast = { path = "../toyc-ast" }
+toyc-hir = { path = "../toyc-hir" }
+toyc-session = { path = "../toyc-session" }
 toyc-span = { path = "../toyc-span" }
