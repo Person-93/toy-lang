@@ -4,7 +4,7 @@ use crate::{
     AssociatedConst, AssociatedType, AttrData, CodeBlock, ConstParam, Enum,
     Expr, ExprFragment, Function, FunctionParam, GenericParam, Item, ItemKind,
     Statement, Struct, StructBody, StructField, Trait, TraitItem,
-    TraitItemKind, TupleField, Type, TypeAlias, Variant, VisKind,
+    TraitItemKind, TupleField, Type, TypeAlias, TypeParam, Variant, VisKind,
   },
   tokens::{Ident, StrLit},
 };
@@ -103,6 +103,10 @@ pub trait Visitor {
 
   fn walk_const_param(&mut self, const_param: &ConstParam) {
     walk_const_param(self, const_param);
+  }
+
+  fn walk_type_param(&mut self, type_param: &TypeParam) {
+    walk_type_param(self, type_param);
   }
 
   fn walk_expr(&mut self, expr: &Expr) {
@@ -365,7 +369,7 @@ pub fn walk_generic_param<V: Visitor + ?Sized>(
 ) {
   match generic_param {
     GenericParam::ConstParam(param) => visitor.walk_const_param(param),
-    GenericParam::Ident(ident) => visitor.walk_ident(*ident),
+    GenericParam::TypeParam(type_param) => visitor.walk_type_param(type_param),
   }
 }
 
@@ -459,10 +463,29 @@ pub fn walk_const_param<V: Visitor + ?Sized>(
   let ConstParam {
     ident,
     type_,
+    default,
     span: _,
   } = const_param;
   visitor.walk_ident(*ident);
   visitor.walk_type(type_);
+  if let Some(default) = default {
+    visitor.walk_expr(default);
+  }
+}
+
+pub fn walk_type_param<V: Visitor + ?Sized>(
+  visitor: &mut V,
+  type_param: &TypeParam,
+) {
+  let TypeParam {
+    ident,
+    default,
+    span: _,
+  } = type_param;
+  visitor.walk_ident(*ident);
+  if let Some(default) = default {
+    visitor.walk_type(default);
+  }
 }
 
 pub fn walk_expr<V: Visitor + ?Sized>(visitor: &mut V, expr: &Expr) {

@@ -1,3 +1,5 @@
+// TODO make toyc-hir no_std?
+
 pub use self::{hir::*, hir_id::*};
 use std::collections::HashMap;
 

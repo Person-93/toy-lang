@@ -1,4 +1,6 @@
 use crate::{BodyId, HirId};
+use core::ops::Deref;
+use toyc_span::symbol::StrLit;
 use toyc_span::{
   symbol::{Ident, Symbol},
   Span,
@@ -46,11 +48,18 @@ impl<'hir> Node<'hir> {
       Node::Type(type_) => type_.span,
       Node::Expr(expr) => expr.span,
       Node::NamedConst(const_) => const_.span,
-      Node::Attr(attr) => attr.span(),
+      Node::Attr(attr) => attr.span,
       Node::AttrData(data) => data.span,
       Node::AttrValue(value) => value.span,
     }
   }
+}
+
+#[derive(Debug)]
+pub struct Package<'hir> {
+  pub attrs: &'hir [Attr<'hir>],
+  pub items: &'hir [Item<'hir>],
+  pub span: Span,
 }
 
 #[derive(Debug)]
@@ -59,6 +68,8 @@ pub enum Item<'hir> {
   Function(Function<'hir>),
   Enum(EnumDef<'hir>),
   Struct(StructDef<'hir>),
+  Trait(Trait<'hir>),
+  TypeAlias(TypeAlias<'hir>),
 }
 
 impl<'hir> Item<'hir> {
@@ -68,6 +79,8 @@ impl<'hir> Item<'hir> {
       Item::Function(function) => function.id,
       Item::Enum(enum_) => enum_.id,
       Item::Struct(struct_) => struct_.id,
+      Item::Trait(trait_) => trait_.id,
+      Item::TypeAlias(type_alias) => type_alias.id,
     }
   }
 
@@ -77,6 +90,8 @@ impl<'hir> Item<'hir> {
       Item::Function(function) => function.span,
       Item::Enum(enum_) => enum_.span,
       Item::Struct(struct_) => struct_.span,
+      Item::Trait(trait_) => trait_.span,
+      Item::TypeAlias(type_alias) => type_alias.span,
     }
   }
 }
@@ -102,20 +117,28 @@ impl Mod<'_> {
 pub struct Function<'hir> {
   pub id: HirId<'hir>,
   pub ident: Ident,
-  pub generics: GenericParams<'hir>,
-  pub signature: &'hir FnDecl<'hir>,
-  pub body_id: BodyId<'hir>,
+  pub visibility: Visibility,
+  pub fn_type: FnType<'hir>,
+  pub body_id: Option<BodyId<'hir>>,
   pub span: Span,
 }
 
 #[derive(Debug)]
-pub struct FnDecl<'hir> {
+pub struct FnType<'hir> {
   pub extern_: Extern,
   pub unsafety: Unsafety,
   pub constness: Constness,
+  pub generics: Option<GenericParams<'hir>>,
   pub inputs: &'hir [Type<'hir>],
   pub output: FnRetTy<'hir>,
   pub self_kind: SelfKind,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Abi {
+  Toy,
+  C,
+  Err(StrLit),
 }
 
 #[derive(Debug)]
@@ -158,7 +181,7 @@ pub struct EnumDef<'hir> {
   pub id: HirId<'hir>,
   pub ident: Ident,
   pub vis: Visibility,
-  pub generics: GenericParams<'hir>,
+  pub generics: Option<GenericParams<'hir>>,
   pub def: &'hir [StructDef<'hir>],
   pub span: Span,
 }
@@ -168,8 +191,8 @@ pub struct StructDef<'hir> {
   pub id: HirId<'hir>,
   pub ident: Ident,
   pub vis: Visibility,
-  pub generics: GenericParams<'hir>,
-  pub def: StructDefKind<'hir>,
+  pub generics: Option<GenericParams<'hir>>,
+  pub kind: StructDefKind<'hir>,
   pub span: Span,
 }
 
@@ -190,6 +213,50 @@ pub struct FieldDef<'hir> {
 }
 
 #[derive(Debug)]
+pub struct Trait<'hir> {
+  pub id: HirId<'hir>,
+  pub ident: Ident,
+  pub visibility: Visibility,
+  pub generics: Option<GenericParams<'hir>>,
+  pub items: &'hir [TraitItem<'hir>],
+  pub span: Span,
+}
+
+#[derive(Debug)]
+pub enum TraitItem<'hir> {
+  Function(Function<'hir>),
+  Const(TraitConst<'hir>),
+  Type(TraitType<'hir>),
+}
+
+#[derive(Debug)]
+pub struct TraitConst<'hir> {
+  pub id: HirId<'hir>,
+  pub ident: Ident,
+  pub default: Option<AnonConst<'hir>>,
+  pub span: Span,
+}
+
+#[derive(Debug)]
+pub struct TraitType<'hir> {
+  pub id: HirId<'hir>,
+  pub ident: Ident,
+  // TODO pub bounds...
+  pub default: Option<&'hir Type<'hir>>,
+  pub span: Span,
+}
+
+#[derive(Debug)]
+pub struct TypeAlias<'hir> {
+  pub id: HirId<'hir>,
+  pub ident: Ident,
+  pub visibility: Visibility,
+  pub generics: Option<GenericParams<'hir>>,
+  pub type_: &'hir Type<'hir>,
+  pub span: Span,
+}
+
+#[derive(Debug)]
 pub struct GenericParams<'hir> {
   pub id: HirId<'hir>,
   pub params: &'hir [GenericParam<'hir>],
@@ -200,7 +267,7 @@ pub struct GenericParams<'hir> {
 pub struct GenericParam<'hir> {
   pub id: HirId<'hir>,
   pub name: Ident,
-  pub kind: &'hir GenericParamKind<'hir>,
+  pub kind: GenericParamKind<'hir>,
   pub span: Span,
 }
 
@@ -224,6 +291,8 @@ pub struct Type<'hir> {
 
 #[derive(Debug)]
 pub enum TypeKind<'hir> {
+  Primitive(PrimitiveType),
+  Path(Ident),
   Slice(&'hir Type<'hir>),
   Array(&'hir Type<'hir>, ArrayLen<'hir>),
   Ptr(MutType<'hir>),
@@ -241,20 +310,12 @@ pub enum TypeKind<'hir> {
 pub struct MutType<'hir> {
   pub inner: &'hir Type<'hir>,
   pub mutability: Mutability,
-  pub span: Span,
 }
 
 impl MutType<'_> {
   pub fn id(&self) -> &HirId {
     &self.inner.id
   }
-}
-
-#[derive(Debug)]
-pub struct FnType<'hir> {
-  pub decl: FnDecl<'hir>,
-  pub generic_params: &'hir GenericParams<'hir>,
-  pub param_names: &'hir [Option<Ident>],
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -271,7 +332,7 @@ pub enum Constness {
 
 #[derive(Copy, Clone, Debug)]
 pub enum Extern {
-  Yes,
+  Yes(Abi),
   No,
 }
 
@@ -284,6 +345,7 @@ pub enum Unsafety {
 #[derive(Debug)]
 pub enum Visibility {
   Public,
+  Super,
   Package,
   Inherited,
   // TODO add 'Restricted' vis once QPath is implemented
@@ -324,13 +386,14 @@ pub enum FloatBits {
 #[derive(Debug)]
 pub struct Expr<'hir> {
   pub id: HirId<'hir>,
-  pub kind: &'hir ExprKind<'hir>,
+  pub kind: ExprKind<'hir>,
   pub span: Span,
 }
 
 #[derive(Debug)]
 pub enum ExprKind<'hir> {
-  Lit(Lit),
+  Ident(Ident),
+  Lit(&'hir Lit<'hir>),
   CodeBlock {
     unsafety: Unsafety,
     constness: Constness,
@@ -423,14 +486,19 @@ pub struct AnonConst<'hir> {
 }
 
 #[derive(Debug)]
-pub struct Attr<'hir> {
-  pub id: HirId<'hir>,
-  pub data: &'hir AttrData<'hir>,
-}
+pub struct Attr<'hir>(AttrData<'hir>);
 
 impl Attr<'_> {
-  pub fn span(&self) -> Span {
-    self.data.span
+  pub fn from_data(data: AttrData) -> Attr {
+    Attr(data)
+  }
+}
+
+impl<'hir> Deref for Attr<'hir> {
+  type Target = AttrData<'hir>;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
   }
 }
 
@@ -445,7 +513,7 @@ pub struct AttrData<'hir> {
 #[derive(Copy, Clone, Debug)]
 pub enum AttrKind<'hir> {
   Plain,
-  Assign(Lit),
+  Assign(&'hir Lit<'hir>),
   Call(&'hir [AttrValue<'hir>]),
 }
 
@@ -458,14 +526,21 @@ pub struct AttrValue<'hir> {
 
 #[derive(Copy, Clone, Debug)]
 pub enum AttrValueKind<'hir> {
-  NumLit(Lit),
+  Lit(&'hir Lit<'hir>),
   Nested(&'hir AttrData<'hir>),
 }
 
+#[derive(Debug)]
+pub struct Lit<'hir> {
+  pub id: HirId<'hir>,
+  pub kind: LitKind,
+  pub span: Span,
+}
+
 #[derive(Copy, Clone, Debug)]
-pub enum Lit {
+pub enum LitKind {
   Str(Symbol),
-  Num(NumLitKind),
+  Num(NumLit),
   Bool(bool),
 }
 
@@ -476,16 +551,25 @@ pub struct BoolLit<'hir> {
   pub span: Span,
 }
 
-#[derive(Debug)]
-pub struct StrLit<'hir> {
-  pub id: HirId<'hir>,
-  pub value: Symbol,
-  pub span: Span,
+#[derive(Copy, Clone, Debug)]
+pub struct NumLit {
+  pub type_: NumLitType,
+  pub value: i32,
+  pub floating: Option<u16>,
+  pub radix: NumLitRadix,
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum NumLitKind {
-  Signed(i16),
-  Unsigned(u32),
-  Float(i16, u32),
+pub enum NumLitType {
+  Signed(IntBits),
+  Unsigned(IntBits),
+  Float(FloatBits),
+  Unspecified,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum NumLitRadix {
+  Bin,
+  Dec,
+  Hex,
 }
