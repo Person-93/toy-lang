@@ -8,10 +8,4 @@ license = "MIT OR APACHE"
 publish = false
 
 [dependencies]
-clap = { version = "3.1.5", features = ["derive"] }
-toyc-ast = { path = "../toyc-ast" }
-toyc-ast-lowering = { path = "../toyc-ast-lowering" }
-toyc-ast-passes = { path = "../toyc-ast-passes" }
-toyc-errors = { path = "../toyc-errors" }
-toyc-hir = { path = "../toyc-hir" }
-toyc-session = { path = "../toyc-session" }
+toyc-main = { path = "../toyc-main" }
