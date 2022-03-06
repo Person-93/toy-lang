@@ -2,6 +2,7 @@
 ident = "[[:alpha:]_][[:alnum:]_]*"
 num_lit = '''(0(x|b))?\d+(\.\d+)?((u|i|f)\d+)?'''
 str_lit = '''"([^"]|(\\"))*"'''
+bool_lit = "(true|false)"
 
 
 [operators]
@@ -135,7 +136,6 @@ kw_dyn = "dyn"
 kw_else = "else"
 kw_enum = "enum"
 kw_extern = "extern"
-kw_false = "false"
 kw_final = "final"
 kw_fn = "fn"
 kw_for = "for"
@@ -160,7 +160,6 @@ kw_self_value = "self"
 kw_static = "static"
 kw_struct = "struct"
 kw_super = "super"
-kw_true = "true"
 kw_trait = "trait"
 kw_try = "try"
 kw_type = "type"

@@ -1,5 +1,5 @@
 use crate::Span;
-use alloc::{borrow::ToOwned, boxed::Box};
+use alloc::{borrow::ToOwned, boxed::Box, string::ToString};
 use core::{
   fmt::{self, Debug, Display, Formatter},
   ops::Deref,
@@ -35,6 +35,13 @@ impl Ident {
       Ok(Ident { name, span })
     }
   }
+
+  pub fn synthesize_number(n: usize) -> Ident {
+    Ident {
+      name: Symbol::new(&n.to_string()),
+      span: Span::DUMMY,
+    }
+  }
 }
 
 impl Display for Ident {
@@ -61,6 +68,62 @@ impl Display for InvalidIdent {
       InvalidIdent::Empty => write!(f, "identifier must not be empty"),
       InvalidIdent::Invalid(symbol) => write!(f, "invalid ident `{symbol}`"),
     }
+  }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct NumLit {
+  pub prefix: Option<NumLitPrefix>,
+  pub val: i32,
+  pub decimal: Option<u16>,
+  pub ty: Option<NumLitType>,
+  pub span: Span,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub enum NumLitPrefix {
+  Binary,
+  Hex,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub enum NumLitType {
+  Int(u16),
+  Unsigned(u16),
+  Float(u16),
+}
+
+impl Display for NumLit {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    let NumLit {
+      prefix,
+      val,
+      decimal,
+      ty,
+      span: _,
+    } = self;
+
+    match prefix {
+      None => (),
+      Some(NumLitPrefix::Hex) => write!(f, "0x")?,
+      Some(NumLitPrefix::Binary) => write!(f, "0b")?,
+    };
+
+    write!(f, "{val}")?;
+
+    if let Some(decimal) = decimal {
+      write!(f, ".{decimal}")?;
+    }
+
+    if let Some(ty) = ty {
+      match ty {
+        NumLitType::Int(bits) => write!(f, "i{bits}"),
+        NumLitType::Unsigned(bits) => write!(f, "u{bits}"),
+        NumLitType::Float(bits) => write!(f, "f{bits}"),
+      }?;
+    }
+
+    Ok(())
   }
 }
 
@@ -94,6 +157,28 @@ impl Display for StrLit {
 impl Debug for StrLit {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     write!(f, "\"{self}\"")
+  }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+pub struct BoolLit {
+  pub value: bool,
+  pub span: Span,
+}
+
+impl Display for BoolLit {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    if self.value {
+      write!(f, "true")
+    } else {
+      write!(f, "false")
+    }
+  }
+}
+
+impl Debug for BoolLit {
+  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    write!(f, "{self}")
   }
 }
 

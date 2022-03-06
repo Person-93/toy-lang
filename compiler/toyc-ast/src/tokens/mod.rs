@@ -1,12 +1,12 @@
 pub use self::generated::*;
 use chumsky::Span as S;
+use core::num::ParseIntError;
 use logos::{Lexer, Logos};
-use std::{
-  fmt::{self, Debug, Display, Formatter},
-  num::ParseIntError,
-};
 pub(crate) use toyc_span::{
-  symbol::{Ident, InvalidIdent, Symbol},
+  symbol::{
+    BoolLit, Ident, InvalidIdent, NumLit, NumLitPrefix, NumLitType, StrLit,
+    Symbol,
+  },
   BytePos, Span,
 };
 
@@ -26,7 +26,14 @@ fn make_ident(lexer: &mut Lexer<Token>) -> Result<Ident, InvalidIdent> {
 fn make_str_lit(lexer: &mut Lexer<Token>) -> StrLit {
   let slice = lexer.slice();
   let slice = &slice[1..lexer.slice().len() - 1];
-  StrLit(Symbol::new(slice))
+  let span = lexer.span();
+  StrLit {
+    value: Symbol::new(slice),
+    span: Span {
+      lo: BytePos(span.start as u32),
+      hi: BytePos(span.end as u32),
+    },
+  }
 }
 
 fn make_num_lit(lexer: &mut Lexer<Token>) -> Result<NumLit, NumLitErr> {
@@ -53,22 +60,28 @@ fn make_num_lit(lexer: &mut Lexer<Token>) -> Result<NumLit, NumLitErr> {
     Some(NumLitPrefix::Hex) => 16,
   };
 
-  let (ty, ty_index) = match slice.find('i') {
-    Some(i) => (Some(NumLitType::Int), Some(i)),
-    None => match slice.find('u') {
-      Some(i) => (Some(NumLitType::Unsigned), Some(i)),
-      None => match slice.find('f') {
-        Some(i) => (Some(NumLitType::Float), Some(i)),
-        None => (None, None),
-      },
-    },
-  };
-
-  if let Some(ty) = &ty {
-    if *ty != NumLitType::Float && dot_index.is_some() {
-      return Err(NumLitErr::NonFloatWithPoint);
+  let (ty, ty_index) = match slice
+    .chars()
+    .enumerate()
+    .find(|(_, c)| *c == 'i' || *c == 'u' || *c == 'f')
+    .map(|(idx, ty)| -> Result<_, ParseIntError> {
+      let bits = slice[idx + 1..].parse()?;
+      Ok((
+        match ty {
+          'i' => NumLitType::Int(bits),
+          'u' => NumLitType::Unsigned(bits),
+          'f' => NumLitType::Float(bits),
+          _ => unreachable!(),
+        },
+        idx,
+      ))
+    }) {
+    Some(data) => {
+      let (idx, ty) = data?;
+      (Some(idx), Some(ty))
     }
-  }
+    None => (None, None),
+  };
 
   let val_index: usize = if prefix.is_none() { 0 } else { 2 };
   let val = match (dot_index, ty_index) {
@@ -85,12 +98,35 @@ fn make_num_lit(lexer: &mut Lexer<Token>) -> Result<NumLit, NumLitErr> {
     None => None,
   };
 
+  let span = lexer.span();
+
   Ok(NumLit {
     prefix,
     val,
     decimal,
     ty,
+    span: Span {
+      lo: BytePos(span.start as u32),
+      hi: BytePos(span.end as u32),
+    },
   })
+}
+
+fn make_bool_lit(lexer: &mut Lexer<Token>) -> BoolLit {
+  BoolLit {
+    value: match lexer.slice() {
+      "true" => true,
+      "false" => false,
+      _ => unreachable!(),
+    },
+    span: {
+      let span = lexer.span();
+      Span {
+        lo: BytePos(span.start as u32),
+        hi: BytePos(span.end as u32),
+      }
+    },
+  }
 }
 
 pub struct TokenIter<'source>(logos::SpannedIter<'source, Token>, Span);
@@ -123,79 +159,6 @@ impl Iterator for TokenIter<'_> {
         },
       )
     })
-  }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
-pub struct StrLit(pub Symbol);
-
-impl<T: AsRef<str> + ?Sized> PartialEq<T> for StrLit {
-  fn eq(&self, other: &T) -> bool {
-    *self.0 == *other.as_ref()
-  }
-}
-
-impl Display for StrLit {
-  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-    Display::fmt(&self.0, f)
-  }
-}
-
-impl Debug for StrLit {
-  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-    write!(f, "\"{self}\"")
-  }
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct NumLit {
-  pub prefix: Option<NumLitPrefix>,
-  pub val: i32,
-  pub decimal: Option<u16>,
-  pub ty: Option<NumLitType>,
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum NumLitPrefix {
-  Binary,
-  Hex,
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum NumLitType {
-  Int,
-  Unsigned,
-  Float,
-}
-
-impl Display for NumLit {
-  fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-    let NumLit {
-      prefix,
-      val,
-      decimal,
-      ty,
-    } = self;
-
-    let prefix = match prefix {
-      None => "",
-      Some(NumLitPrefix::Hex) => "0x",
-      Some(NumLitPrefix::Binary) => "0b",
-    };
-
-    let decimal = match decimal {
-      None => String::new(),
-      Some(n) => format!("{n}"),
-    };
-
-    let ty = match ty {
-      None => "",
-      Some(NumLitType::Float) => "f",
-      Some(NumLitType::Int) => "i",
-      Some(NumLitType::Unsigned) => "u",
-    };
-
-    write!(f, "{prefix}{val}{decimal}{ty}")
   }
 }
 

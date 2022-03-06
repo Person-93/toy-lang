@@ -48,5 +48,3 @@ trait_item = attr*:attrs trait_item_kind
 trait_item_kind = function | associated_type | associated_const
 associated_type = kw_type ident (equals type)?:default semi
 associated_const = kw_const ident colon type (equals expr)?:default semi
-
-bool = kw_true | kw_false
