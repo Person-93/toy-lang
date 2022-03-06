@@ -63,6 +63,20 @@ impl Handler {
     std::process::exit(code.get());
   }
 
+  /// Prints an error report and exits with code 101 if there were errors
+  pub fn finish(self) {
+    self.print_error_report();
+    let mut inner = self.inner.borrow_mut();
+    if inner.err_count > 0 {
+      std::process::exit(101);
+    } else {
+      inner.emitter.emit_diagnostic(&Diagnostic::new(
+        Level::Note,
+        "all checks passed but generating the output file is not yet implemented",
+      ));
+    }
+  }
+
   fn print_error_report(&self) {
     let mut inner = self.inner.borrow_mut();
 

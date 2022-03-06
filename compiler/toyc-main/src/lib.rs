@@ -64,12 +64,7 @@ pub fn main() -> ! {
   };
   toyc_ast_passes::check_package(&session.handler, &ast.attrs, &ast.items);
 
-  session
-    .handler
-    .note(
-      "all checks passed but generating the output file is not yet implemented",
-    )
-    .emit();
+  session.handler.finish();
 
   process::exit(0);
 }
