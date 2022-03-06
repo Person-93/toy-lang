@@ -22,9 +22,9 @@ pub struct TypedArena<T> {
 }
 
 impl_for_base!(TypedArena<T>);
-impl<T> ArenaBase<T> for TypedArena<T> {
+impl<'arena, T: 'arena> ArenaBase<'arena, T> for TypedArena<T> {
   #[inline]
-  fn alloc(&self, object: T) -> &mut T {
+  fn alloc(&self, object: T) -> &'arena mut T {
     if mem::size_of::<T>() == 0 {
       return unsafe {
         self

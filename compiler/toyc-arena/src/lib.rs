@@ -10,17 +10,20 @@ pub use self::{dropless::DroplessArena, typed::TypedArena};
 mod dropless;
 mod typed;
 
-pub trait Arena<T>: Default {
+pub trait Arena<'arena, T> {
   #[allow(clippy::mut_from_ref)]
-  fn alloc(&self, object: T) -> &mut T;
+  fn alloc(&self, object: T) -> &'arena mut T;
 
   #[allow(clippy::mut_from_ref)]
-  fn alloc_iter<I: IntoIterator<Item = T>>(&self, iterable: I) -> &mut [T];
+  fn alloc_iter<I>(&self, iterable: I) -> &'arena mut [T]
+  where
+    I: IntoIterator<Item = T>,
+    <I as IntoIterator>::Item: 'arena;
 }
 
-trait ArenaBase<T>: Default {
+trait ArenaBase<'arena, T: 'arena>: Default {
   #[allow(clippy::mut_from_ref)]
-  fn alloc(&self, object: T) -> &mut T;
+  fn alloc(&self, object: T) -> &'arena mut T;
 
   /// # Safety
   /// The memory must be initialized before the arena is dropped.
@@ -34,15 +37,16 @@ macro_rules! impl_for_base {
       use crate::{Arena, ArenaBase};
       use ::smallvec::SmallVec;
 
-      impl<T> Arena<T> for $ty {
-        fn alloc(&self, object: T) -> &mut T {
+      impl<'arena, T: 'arena> Arena<'arena, T> for $ty {
+        fn alloc(&self, object: T) -> &'arena mut T {
           ArenaBase::alloc(self, object)
         }
 
-        fn alloc_iter<I: IntoIterator<Item = T>>(
-          &self,
-          iterable: I,
-        ) -> &mut [T] {
+        fn alloc_iter<I>(&self, iterable: I) -> &'arena mut [T]
+        where
+          I: IntoIterator<Item = T>,
+          <I as IntoIterator>::Item: 'arena,
+        {
           unsafe {
             let buffer = Box::leak(
               SmallVec::<[_; 8]>::from_iter(iterable).into_boxed_slice(),
@@ -96,7 +100,7 @@ macro_rules! declare_arena {
     impl<$lifetime> $arena<$lifetime> {
       $(
         $typed_vis fn $alias(
-          &$lifetime self,
+          &$lifetime self
         ) -> impl Iterator<Item = &$lifetime $typed> + $lifetime {
           self.$alias.iter()
         }
@@ -107,44 +111,49 @@ macro_rules! declare_arena {
     const _: () = {
       use $crate::Arena as _;
 
-      impl<$lifetime, __T: Dispatch<$lifetime>> $crate::Arena<__T> for $arena<$lifetime> {
-        fn alloc(&self, object: __T) -> &mut __T {
+      impl<$lifetime, __T> $crate::Arena<$lifetime, __T> for $arena<$lifetime>
+      where
+        __T: Dispatch<$lifetime> + $lifetime
+      {
+        fn alloc(&self, object: __T) -> &$lifetime mut __T {
           object.dispatch_one(self)
         }
 
-        fn alloc_iter<I>(&self, iter: I) -> &mut [I::Item]
+        fn alloc_iter<I>(&self, iter: I) -> &$lifetime mut [I::Item]
         where
-          I: IntoIterator,
-          <I as IntoIterator>::Item: Dispatch<$lifetime>
+          I: IntoIterator<Item = __T>,
+          <I as IntoIterator>::Item: Dispatch<$lifetime> + $lifetime
         {
           <<I as IntoIterator>::Item as Dispatch<$lifetime>>::dispatch_iter(iter, self)
         }
       }
 
       $visibility trait Dispatch<$lifetime>: Sized {
-        fn dispatch_one<'__arena>(self, arena: &'__arena $arena<$lifetime>) -> &'__arena mut Self;
+        fn dispatch_one(self, arena: &$arena<$lifetime>) -> &$lifetime mut Self;
 
-        fn dispatch_iter<'__arena, I>(iter: I, arena: &'__arena $arena<$lifetime>) -> &'__arena mut[Self]
+        fn dispatch_iter<I>(iter: I, arena: &$arena<$lifetime>) -> &$lifetime mut[Self]
         where
-          I: IntoIterator<Item = Self>;
+          I: IntoIterator<Item = Self>,
+          <I as IntoIterator>::Item: $lifetime;
       }
 
       $(
         #[automatically_derived]
         impl<$lifetime> Dispatch<$lifetime> for $typed {
-          fn dispatch_one<'__arena>(
+          fn dispatch_one(
             self,
-            arena: &'__arena $arena<$lifetime>,
-          ) -> &'__arena mut Self {
+            arena: &$arena<$lifetime>,
+          ) -> &$lifetime mut Self {
             arena.$alias.alloc(self)
           }
 
-          fn dispatch_iter<'__arena, I>(
+          fn dispatch_iter<I>(
             iter: I,
-            arena: &'__arena $arena<$lifetime>,
-          ) -> &'__arena mut[Self]
+            arena: &$arena<$lifetime>,
+          ) -> &$lifetime mut[Self]
             where
               I: IntoIterator<Item = Self>,
+              <I as IntoIterator>::Item: $lifetime,
             {
               arena.$alias.alloc_iter(iter)
             }
@@ -154,19 +163,20 @@ macro_rules! declare_arena {
         $($(
           #[automatically_derived]
           impl<$lifetime> Dispatch<$lifetime> for $anon {
-            fn dispatch_one<'__arena>(
+            fn dispatch_one(
               self,
-              arena: &'__arena $arena<$lifetime>,
-            ) -> &'__arena mut Self {
+              arena: &$arena<$lifetime>,
+            ) -> &$lifetime mut Self {
               arena.$dropless.alloc(self)
             }
 
-            fn dispatch_iter<'__arena, I>(
+            fn dispatch_iter<I>(
               iter: I,
-              arena: &'__arena $arena<$lifetime>,
-            ) -> &'__arena mut[Self]
+              arena: &$arena<$lifetime>,
+            ) -> &$lifetime mut[Self]
             where
               I: IntoIterator<Item = Self>,
+              <I as IntoIterator>::Item: $lifetime,
             {
               arena.$dropless.alloc_iter(iter)
             }

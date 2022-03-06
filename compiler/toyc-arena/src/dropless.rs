@@ -23,9 +23,9 @@ pub struct DroplessArena {
 }
 
 impl_for_base!(DroplessArena);
-impl<T> ArenaBase<T> for DroplessArena {
+impl<'arena, T: 'arena> ArenaBase<'arena, T> for DroplessArena {
   #[inline]
-  fn alloc(&self, object: T) -> &mut T {
+  fn alloc(&self, object: T) -> &'arena mut T {
     assert!(!mem::needs_drop::<T>());
 
     unsafe {
