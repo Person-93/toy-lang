@@ -9,3 +9,6 @@ publish = false
 
 [dependencies]
 insta = { version = "1.12.0", features = ["glob"] }
+parking_lot = "0.12.0"
+toyc-errors = { path = "../../compiler/toyc-errors" }
+toyc-session = { path = "../../compiler/toyc-session" }
