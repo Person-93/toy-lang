@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 pub use self::context::HirContext;
 use core::fmt::{self, Display, Formatter};
 use std::error::Error;

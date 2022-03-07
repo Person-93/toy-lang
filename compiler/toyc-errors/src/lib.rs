@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 pub use self::{
   diagnostic::Diagnostic, diagnostic_builder::DiagnosticBuilder,
   handler::Handler,

@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use clap::{ArgGroup, Parser};
 use std::{
   fs,

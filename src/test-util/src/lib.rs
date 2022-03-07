@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use core::ops::{Deref, DerefMut};
 pub use insta::{assert_debug_snapshot, assert_snapshot, glob, with_settings};
 use parking_lot::{RwLock, RwLockReadGuard};

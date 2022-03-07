@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use crate::specs::Specs;
 use anyhow::{Context, Result};
 use ast_description_lang::Config;
