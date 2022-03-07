@@ -17,7 +17,7 @@ mod context;
 
 impl<'hir> HirContext<'hir> {
   #[must_use]
-  pub fn lower_package(&self, root: &ast::File) -> Package<'hir> {
+  fn lower_package(&self, root: &ast::File) -> Package<'hir> {
     Package {
       attrs: self
         .alloc_iter(root.attrs.iter().map(|attr| self.lower_attr(attr))),

@@ -5,7 +5,7 @@ fn main() {
   snapshots(|text| {
     let session = TestSession::new("test-ast-lowering");
     let ast = toyc_ast::parse_single_file(text, &session.handler).unwrap();
-    let ctx = HirContext::new(&session);
-    assert_debug_snapshot!(ctx.lower_package(&ast));
+    let ctx = HirContext::new(&session, &ast);
+    assert_debug_snapshot!(ctx.root());
   });
 }
