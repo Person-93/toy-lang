@@ -17,14 +17,26 @@ use toyc_span::symbol::{self, Ident};
 
 mod context;
 
+#[allow(clippy::let_and_return)]
 impl<'hir> HirContext<'hir> {
   #[must_use]
   fn lower_package(&self, root: &ast::File) -> Package<'hir> {
     Package {
-      attrs: self
-        .alloc_iter(root.attrs.iter().map(|attr| self.lower_attr(attr))),
-      items: self
-        .alloc_iter(root.items.iter().map(|item| self.lower_item(item))),
+      attrs: {
+        let attrs = self.nodes.borrow_mut().insert_slice(
+          self
+            .arena
+            .alloc_iter(root.attrs.iter().map(|attr| self.lower_attr(attr))),
+        );
+        attrs
+      },
+      items: {
+        let items = self
+          .arena
+          .alloc_iter(root.items.iter().map(|item| self.lower_item(item)));
+        let items = self.nodes.borrow_mut().insert_slice(items);
+        items
+      },
       span: root.span,
     }
   }
@@ -42,11 +54,13 @@ impl<'hir> HirContext<'hir> {
       kind: match &attr_data.kind {
         None => AttrKind::Plain,
         Some(ast::AttrDataKind::Assign(literal)) => {
-          AttrKind::Assign(self.alloc(self.lower_literal(literal)))
+          AttrKind::Assign(self.arena.alloc(self.lower_literal(literal)))
         }
-        Some(ast::AttrDataKind::Call(args)) => AttrKind::Call(self.alloc_iter(
-          args.iter().map(|value| self.lower_attr_call_value(value)),
-        )),
+        Some(ast::AttrDataKind::Call(args)) => AttrKind::Call(
+          self.nodes.borrow_mut().insert_slice(self.arena.alloc_iter(
+            args.iter().map(|value| self.lower_attr_call_value(value)),
+          )),
+        ),
       },
       span: attr_data.span,
     }
@@ -59,11 +73,14 @@ impl<'hir> HirContext<'hir> {
   ) -> AttrValue<'hir> {
     match value {
       ast::AttrCallValue::Literal(literal) => {
-        AttrValue::Lit(self.alloc(self.lower_literal(literal)))
+        AttrValue::Lit(self.arena.alloc(self.lower_literal(literal)))
       }
-      ast::AttrCallValue::Nested(inner) => {
-        AttrValue::Nested(self.alloc(self.lower_attr_data(inner)))
-      }
+      ast::AttrCallValue::Nested(inner) => AttrValue::Nested(
+        self
+          .nodes
+          .borrow_mut()
+          .insert(self.arena.alloc(self.lower_attr_data(inner))),
+      ),
     }
   }
 
@@ -102,28 +119,41 @@ impl<'hir> HirContext<'hir> {
         }),
         unsafety: Unsafety::No,
         constness: Constness::No,
-        generics: function
-          .generic_params
-          .as_ref()
-          .map(|g| self.lower_generic_params(g)),
-        inputs: self.alloc_iter(
-          function
-            .params
-            .iter()
-            .map(|param| self.lower_type(&param.type_)),
-        ),
-        output: function
-          .return_type
-          .as_ref()
-          .map_or(FnRetTy::Default, |ty| {
-            FnRetTy::Explicit(self.alloc(self.lower_type(ty)))
-          }),
+        generics: {
+          let params = function
+            .generic_params
+            .as_ref()
+            .map(|g| self.lower_generic_params(g));
+          params
+        },
+        inputs: {
+          let inputs = self.nodes.borrow_mut().insert_slice(
+            self.arena.alloc_iter(
+              function
+                .params
+                .iter()
+                .map(|param| self.lower_type(&param.type_)),
+            ),
+          );
+          inputs
+        },
+        output: {
+          let return_type =
+            function
+              .return_type
+              .as_ref()
+              .map_or(FnRetTy::Default, |ty| {
+                let ty = self.arena.alloc(self.lower_type(ty));
+                FnRetTy::Explicit(self.nodes.borrow_mut().insert(ty))
+              });
+          return_type
+        },
         self_kind: SelfKind::None,
       },
-      body_id: function
-        .body
-        .as_ref()
-        .map(|expr| self.lower_expr(expr).id.to_body_id()),
+      body_id: function.body.as_ref().map(|expr| {
+        let expr = self.arena.alloc(self.lower_expr(expr));
+        self.nodes.borrow_mut().insert(expr).id.to_body_id()
+      }),
       span: function.span,
     }
   }
@@ -138,11 +168,17 @@ impl<'hir> HirContext<'hir> {
       id: self.next_id(),
       ident: struct_.ident,
       vis: convert_visibility(vis),
-      generics: struct_
-        .generic_params
-        .as_ref()
-        .map(|generics| self.lower_generic_params(generics)),
-      kind: self.lower_struct_fields(&struct_.fields),
+      generics: {
+        let generics = struct_
+          .generic_params
+          .as_ref()
+          .map(|generics| self.lower_generic_params(generics));
+        generics
+      },
+      kind: {
+        let kind = self.lower_struct_fields(&struct_.fields);
+        kind
+      },
       span: struct_.span,
     }
   }
@@ -153,17 +189,22 @@ impl<'hir> HirContext<'hir> {
       id: self.next_id(),
       ident: enum_.ident,
       vis: convert_visibility(vis),
-      generics: enum_
-        .generic_params
-        .as_ref()
-        .map(|g| self.lower_generic_params(g)),
-      def: self.alloc_iter(enum_.variants.iter().map(|variant| StructDef {
-        id: self.next_id(),
-        ident: variant.ident,
-        vis: Visibility::Inherited,
-        generics: None,
-        kind: self.lower_struct_fields(&variant.kind),
-        span: variant.span,
+      generics: {
+        let generics = enum_
+          .generic_params
+          .as_ref()
+          .map(|g| self.lower_generic_params(g));
+        generics
+      },
+      def: self.arena.alloc_iter(enum_.variants.iter().map(|variant| {
+        StructDef {
+          id: self.next_id(),
+          ident: variant.ident,
+          vis: Visibility::Inherited,
+          generics: None,
+          kind: self.lower_struct_fields(&variant.kind),
+          span: variant.span,
+        }
       })),
       span: enum_.span,
     }
@@ -176,27 +217,27 @@ impl<'hir> HirContext<'hir> {
   ) -> StructDefKind<'hir> {
     match fields {
       ast::StructBody::NamedStruct(fields) => {
-        StructDefKind::Struct(self.alloc_iter(fields.iter().map(|field| {
-          FieldDef {
+        StructDefKind::Struct(self.nodes.borrow_mut().insert_slice(
+          self.arena.alloc_iter(fields.iter().map(|field| FieldDef {
             id: self.next_id(),
             ident: field.ident,
-            type_: self.alloc(self.lower_type(&field.type_)),
+            type_: self.arena.alloc(self.lower_type(&field.type_)),
             vis: convert_visibility(&field.vis),
             span: field.span,
-          }
-        })))
+          })),
+        ))
       }
-      ast::StructBody::TupleStruct(fields) => {
-        StructDefKind::Tuple(self.alloc_iter(fields.iter().enumerate().map(
-          |(idx, field)| FieldDef {
+      ast::StructBody::TupleStruct(fields) => StructDefKind::Tuple(
+        self.nodes.borrow_mut().insert_slice(self.arena.alloc_iter(
+          fields.iter().enumerate().map(|(idx, field)| FieldDef {
             id: self.next_id(),
             ident: Ident::synthesize_number(idx),
-            type_: self.alloc(self.lower_type(&field.type_)),
+            type_: self.arena.alloc(self.lower_type(&field.type_)),
             vis: convert_visibility(&field.vis),
             span: field.span,
-          },
-        )))
-      }
+          }),
+        )),
+      ),
       ast::StructBody::UnitStruct => StructDefKind::Unit,
     }
   }
@@ -207,36 +248,44 @@ impl<'hir> HirContext<'hir> {
       id: self.next_id(),
       ident: trait_.ident,
       visibility: convert_visibility(vis),
-      generics: trait_
-        .generic_params
-        .as_ref()
-        .map(|g| self.lower_generic_params(g)),
-      items: self.alloc_iter(trait_.items.iter().map(|item| {
-        match &item.trait_item_kind {
-          ast::TraitItemKind::Function(f) => {
-            TraitItem::Function(self.lower_function(f, &None))
+      generics: {
+        let generics = trait_
+          .generic_params
+          .as_ref()
+          .map(|g| self.lower_generic_params(g));
+        generics
+      },
+      items: {
+        let items = self.arena.alloc_iter(trait_.items.iter().map(|item| {
+          match &item.trait_item_kind {
+            ast::TraitItemKind::Function(f) => {
+              TraitItem::Function(self.lower_function(f, &None))
+            }
+            ast::TraitItemKind::AssociatedType(t) => {
+              TraitItem::Type(TraitType {
+                id: self.next_id(),
+                ident: t.ident,
+                default: t
+                  .default
+                  .as_ref()
+                  .map(|t| &*self.arena.alloc(self.lower_type(t))),
+                span: t.span,
+              })
+            }
+            ast::TraitItemKind::AssociatedConst(c) => {
+              TraitItem::Const(TraitConst {
+                id: self.next_id(),
+                ident: c.ident,
+                default: c.default.as_ref().map(|c| AnonConst {
+                  body: self.lower_expr(c).id.to_body_id(),
+                }),
+                span: c.span,
+              })
+            }
           }
-          ast::TraitItemKind::AssociatedType(t) => TraitItem::Type(TraitType {
-            id: self.next_id(),
-            ident: t.ident,
-            default: t
-              .default
-              .as_ref()
-              .map(|t| &*self.alloc(self.lower_type(t))),
-            span: t.span,
-          }),
-          ast::TraitItemKind::AssociatedConst(c) => {
-            TraitItem::Const(TraitConst {
-              id: self.next_id(),
-              ident: c.ident,
-              default: c.default.as_ref().map(|c| AnonConst {
-                body: self.lower_expr(c).id.to_body_id(),
-              }),
-              span: c.span,
-            })
-          }
-        }
-      })),
+        }));
+        items
+      },
       span: trait_.span,
     }
   }
@@ -251,11 +300,17 @@ impl<'hir> HirContext<'hir> {
       id: self.next_id(),
       ident: type_alias.ident,
       visibility: convert_visibility(vis),
-      generics: type_alias
-        .generic_params
-        .as_ref()
-        .map(|g| self.lower_generic_params(g)),
-      type_: self.alloc(self.lower_type(&type_alias.type_)),
+      generics: {
+        let generics = type_alias
+          .generic_params
+          .as_ref()
+          .map(|g| self.lower_generic_params(g));
+        generics
+      },
+      type_: {
+        let type_ = self.arena.alloc(self.lower_type(&type_alias.type_));
+        type_
+      },
       span: type_alias.span,
     }
   }
@@ -268,23 +323,30 @@ impl<'hir> HirContext<'hir> {
         ExprKind::CodeBlock {
           unsafety: Unsafety::No,
           constness: Constness::No,
-          statements: self.alloc_iter(
-            codeblock
-              .statements
-              .iter()
-              .map(|statement| self.lower_expr(&statement.expr)),
-          ),
-          trailing: codeblock
-            .trailing
-            .as_ref()
-            .map(|trailing| &*self.alloc(self.lower_expr(trailing))),
+          statements: {
+            let statements = self.arena.alloc_iter(
+              codeblock
+                .statements
+                .iter()
+                .map(|statement| self.lower_expr(&statement.expr)),
+            );
+            let statements = self.nodes.borrow_mut().insert_slice(statements);
+            statements
+          },
+          trailing: {
+            let trailing = codeblock.trailing.as_ref().map(|trailing| {
+              let trailing = self.lower_expr(trailing);
+              self.nodes.borrow_mut().insert(&*self.arena.alloc(trailing))
+            });
+            trailing
+          },
         },
         codeblock.span,
       ),
       // TODO how to tell if ExprKind should be an ident or a type?
       ast::ExprFragment::Ident(ident) => (ExprKind::Ident(*ident), ident.span),
       ast::ExprFragment::Literal(literal) => (
-        ExprKind::Lit(self.alloc(self.lower_literal(literal))),
+        ExprKind::Lit(self.arena.alloc(self.lower_literal(literal))),
         literal.span(),
       ),
     };
@@ -298,8 +360,19 @@ impl<'hir> HirContext<'hir> {
       Some(args) => Expr {
         id: self.next_id(),
         kind: ExprKind::Call {
-          callee: self.alloc(primary),
-          args: self.alloc_iter(args.iter().map(|arg| self.lower_expr(arg))),
+          callee: {
+            let callee =
+              self.nodes.borrow_mut().insert(self.arena.alloc(primary));
+            callee
+          },
+          args: {
+            let args = self.nodes.borrow_mut().insert_slice(
+              self
+                .arena
+                .alloc_iter(args.iter().map(|arg| self.lower_expr(arg))),
+            );
+            args
+          },
         },
         span: expr.span,
       },
@@ -313,8 +386,14 @@ impl<'hir> HirContext<'hir> {
   ) -> GenericParams<'hir> {
     GenericParams {
       id: self.next_id(),
-      params: self
-        .alloc_iter(generics.iter().map(|g| self.lower_generic_param(g))),
+      params: {
+        let params = self.nodes.borrow_mut().insert_slice(
+          self
+            .arena
+            .alloc_iter(generics.iter().map(|g| self.lower_generic_param(g))),
+        );
+        params
+      },
       span: generics
         .first()
         .unwrap()
@@ -333,9 +412,14 @@ impl<'hir> HirContext<'hir> {
         id: self.next_id(),
         name: c.ident,
         kind: GenericParamKind::Const {
-          ty: self.alloc(self.lower_type(&c.type_)),
+          ty: self.arena.alloc(self.lower_type(&c.type_)),
           default: c.default.as_ref().map(|c| AnonConst {
-            body: self.alloc(self.lower_expr(c)).id.to_body_id(),
+            body: self
+              .nodes
+              .borrow_mut()
+              .insert(self.arena.alloc(self.lower_expr(c)))
+              .id
+              .to_body_id(),
           }),
         },
         span: c.span,
@@ -344,10 +428,12 @@ impl<'hir> HirContext<'hir> {
         id: self.next_id(),
         name: type_param.ident,
         kind: GenericParamKind::Type {
-          default: type_param
-            .default
-            .as_ref()
-            .map(|t| &*self.alloc(self.lower_type(t))),
+          default: type_param.default.as_ref().map(|t| {
+            self
+              .nodes
+              .borrow_mut()
+              .insert(self.arena.alloc(self.lower_type(t)))
+          }),
         },
         span: type_param.span,
       },
@@ -385,7 +471,7 @@ impl<'hir> HirContext<'hir> {
         span: ident.span,
       },
       ast::Type::Ref(inner) => {
-        let inner = self.alloc(self.lower_type(inner));
+        let inner = self.arena.alloc(self.lower_type(inner));
         Type {
           id: self.next_id(),
           kind: TypeKind::Ref(MutType {
