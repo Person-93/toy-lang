@@ -48,12 +48,23 @@ macro_rules! impl_for_base {
           <I as IntoIterator>::Item: 'arena,
         {
           unsafe {
-            let buffer = Box::leak(
-              SmallVec::<[_; 8]>::from_iter(iterable).into_boxed_slice(),
-            );
-            let ptr = self.alloc_uninit_slice(buffer.len());
-            ptr::copy(buffer as *mut [T] as *mut T, ptr, buffer.len());
-            &mut *slice::from_raw_parts_mut(ptr, buffer.len())
+            let mut buffer = SmallVec::<[_; 8]>::from_iter(iterable);
+
+            let p = buffer.as_mut_ptr();
+            let len = buffer.len();
+            let capacity = buffer.capacity();
+            let spilled = buffer.spilled();
+            core::mem::forget(buffer);
+
+            let ptr = self.alloc_uninit_slice(len);
+            ptr::copy(p, ptr, len);
+
+            if spilled {
+              let layout = alloc::alloc::Layout::array::<T>(capacity).unwrap();
+              alloc::alloc::dealloc(p as *mut u8, layout);
+            }
+
+            &mut *slice::from_raw_parts_mut(ptr, len)
           }
         }
       }
