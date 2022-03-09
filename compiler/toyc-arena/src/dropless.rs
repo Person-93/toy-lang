@@ -32,28 +32,22 @@ impl<'arena, T: 'arena> ArenaBase<'arena, T> for DroplessArena {
       if mem::size_of::<T>() == 0 {
         NonNull::dangling().as_mut()
       } else {
-        let mut ptr = self.ptr.get();
-        if ptr.is_null() {
-          self.grow(mem::size_of::<T>())
+        let ptr = if self.ptr.get().is_null() {
+          self.grow(mem::size_of::<T>());
+          self.align::<T>()
         } else {
-          let alignment = mem::align_of::<T>();
-          let distance = alignment % ptr as usize;
-          if distance > 0 {
-            ptr = ptr.add(alignment - distance);
-          }
-          self.ptr.set(ptr);
-          let ptr = ptr as *mut T;
+          let ptr = self.align::<T>().add(1);
 
-          if ptr.add(1) as usize > self.end.get() as usize {
-            self.grow(mem::size_of::<T>())
+          if ptr as usize >= self.end.get() as usize {
+            self.grow(mem::size_of::<T>());
+            self.align::<T>()
           } else {
-            self.ptr.set(ptr as *mut u8);
+            ptr
           }
-        }
+        };
 
-        let ptr = self.ptr.get() as *mut T;
         ptr.write(object);
-        self.ptr.set(ptr.add(1) as *mut u8);
+        self.ptr.set(ptr.add(1) as _);
         &mut *ptr
       }
     }
@@ -61,16 +55,23 @@ impl<'arena, T: 'arena> ArenaBase<'arena, T> for DroplessArena {
 
   //noinspection DuplicatedCode
   unsafe fn alloc_uninit_slice(&self, len: usize) -> *mut T {
-    let ptr = self.ptr.get();
-    let len = mem::size_of::<T>() * len;
-    (if (self.end.get().offset_from(ptr) as usize) < len {
+    if mem::size_of::<T>() == 0 {
+      return NonNull::dangling().as_mut();
+    }
+
+    if self.end.get().is_null() {
+      self.grow(mem::size_of::<T>() * len);
+      return self.align::<T>();
+    }
+
+    let ptr = self.align::<T>();
+    if ((self.end.get() as *mut T).offset_from(ptr) as usize) < len {
       self.grow(len);
-      self.ptr.get()
+      self.align::<T>()
     } else {
-      self.ptr.set(ptr.add(len));
+      self.ptr.set(ptr.add(len) as _);
       ptr
-    })
-    .cast()
+    }
   }
 }
 
@@ -82,6 +83,19 @@ impl DroplessArena {
       page_size: Cell::new(0),
       pages: RefCell::new(Vec::new()),
     }
+  }
+
+  #[inline]
+  fn align<T>(&self) -> *mut T {
+    assert_ne!(mem::size_of::<T>(), 0);
+
+    let ptr = self.ptr.get();
+    let alignment = mem::align_of::<T>();
+    let distance = ptr.align_offset(alignment);
+    let ptr = ptr.wrapping_add(distance);
+    assert!(ptr as usize >= self.ptr.get() as usize);
+    self.ptr.set(ptr);
+    ptr as _
   }
 
   #[cold]

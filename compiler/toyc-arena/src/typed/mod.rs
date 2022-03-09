@@ -1,5 +1,9 @@
 use crate::{impl_for_base, ArenaBase, HUGE_PAGE, PAGE};
-use alloc::{alloc::alloc, alloc::Layout, boxed::Box, vec::Vec};
+use alloc::{
+  alloc::Layout,
+  alloc::{alloc, dealloc},
+  vec::Vec,
+};
 use core::{
   cell::{Cell, RefCell},
   cmp,
@@ -27,9 +31,7 @@ impl<'arena, T: 'arena> ArenaBase<'arena, T> for TypedArena<T> {
   fn alloc(&self, object: T) -> &'arena mut T {
     if mem::size_of::<T>() == 0 {
       return unsafe {
-        self
-          .ptr
-          .set((self.ptr.get() as *mut u8).offset(1) as *mut T);
+        self.ptr.set((self.ptr.get() as usize + 1) as *mut T);
         mem::forget(object);
         NonNull::dangling().as_mut()
       };
@@ -54,7 +56,7 @@ impl<'arena, T: 'arena> ArenaBase<'arena, T> for TypedArena<T> {
       NonNull::dangling().as_ptr()
     } else {
       let ptr = self.ptr.get();
-      if (self.end.get().offset_from(ptr) as usize) < len {
+      if ptr.is_null() || (self.end.get().offset_from(ptr) as usize) < len {
         self.grow(len);
         self.ptr.replace(self.ptr.get().add(len))
       } else {
@@ -101,7 +103,7 @@ impl<T> TypedArena<T> {
           self.ptr.get().offset_from(last_chunk.start()) as usize;
 
         new_chunk_size =
-          cmp::min(HUGE_PAGE / obj_size, last_chunk.storage.len() * 2);
+          cmp::min(HUGE_PAGE / obj_size, last_chunk.capacity * 2);
       } else {
         new_chunk_size = PAGE / obj_size;
       }
@@ -147,8 +149,9 @@ impl<T> Drop for TypedArena<T> {
 }
 
 struct ArenaChunk<T> {
-  storage: Box<[u8]>,
+  storage: *mut u8,
   entries: usize,
+  capacity: usize,
   _marker: PhantomData<T>,
 }
 
@@ -157,17 +160,9 @@ impl<T> ArenaChunk<T> {
   unsafe fn new(capacity: usize) -> ArenaChunk<T> {
     assert_ne!(mem::size_of::<T>(), 0);
     ArenaChunk {
-      storage: Box::from_raw(slice::from_raw_parts_mut(
-        alloc(
-          Layout::from_size_align(
-            mem::size_of::<T>() * capacity,
-            mem::align_of::<T>(),
-          )
-          .unwrap(),
-        ),
-        capacity,
-      )),
+      storage: alloc(Layout::array::<T>(capacity).unwrap()),
       entries: 0,
+      capacity,
       _marker: PhantomData,
     }
   }
@@ -178,20 +173,21 @@ impl<T> ArenaChunk<T> {
       ptr::drop_in_place(ptr::slice_from_raw_parts_mut(
         self.start(),
         self.entries,
-      ))
+      ));
     }
+    dealloc(self.storage, Layout::array::<T>(self.capacity).unwrap());
   }
 
   /// Returns a pointer to the first allocated object
   #[inline]
   fn start(&mut self) -> *mut T {
-    self.storage.as_mut_ptr() as *mut T
+    self.storage as *mut T
   }
 
   /// Returns a pointer to the end of the allocated space
   #[inline]
   fn end(&mut self) -> *mut T {
-    unsafe { self.start().add(self.storage.len()) }
+    unsafe { self.start().add(self.capacity) }
   }
 }
 
