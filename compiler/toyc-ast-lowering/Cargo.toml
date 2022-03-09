@@ -13,7 +13,6 @@ toyc-ast = { path = "../toyc-ast" }
 toyc-hir = { path = "../toyc-hir" }
 toyc-session = { path = "../toyc-session" }
 toyc-span = { path = "../toyc-span" }
-toyc-util = { path = "../toyc-util" }
 
 [dev-dependencies]
 test-util = { path = "../../src/test-util" }

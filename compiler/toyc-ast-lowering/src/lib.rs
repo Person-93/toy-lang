@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-pub use self::context::HirContext;
+pub use self::context::LoweringContext;
 use core::fmt::{self, Display, Formatter};
 use std::error::Error;
 use toyc_arena::Arena;
@@ -18,7 +18,7 @@ use toyc_span::symbol::{self, Ident};
 mod context;
 
 #[allow(clippy::let_and_return)]
-impl<'hir> HirContext<'hir> {
+impl<'hir> LoweringContext<'hir> {
   #[must_use]
   fn lower_package(&self, root: &ast::File) -> Package<'hir> {
     Package {
