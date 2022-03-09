@@ -22,7 +22,7 @@ on:
 jobs:
   ci:
     name: CI
-    needs: [smoke, test, docs, rustfmt, clippy]
+    needs: [smoke, test, docs, rustfmt, clippy, miri]
     runs-on: ubuntu-latest
     steps:
     - name: Done
@@ -71,13 +71,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: toolchain-id
-      run: echo "::set-env TOOLCHAIN=$(curl -s https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/miri)"
+      run: echo "TOOLCHAIN=$(curl -s https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/miri)" >> $GITHUB_ENV
 
     - name: toolchain
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: ${{ env.TOOLCHAIN }}
+        toolchain: nightly-${{ env.TOOLCHAIN }}
         override: true
         components: miri
 
