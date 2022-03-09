@@ -185,29 +185,29 @@ mod tests {
   #[test]
   fn test_count() {
     let arena = TypedArena::new();
-    for _ in 0..123456 {
+    for _ in 0..2000 {
       arena.alloc(0);
     }
-    assert_eq!(arena.iter().count(), 123456);
+    assert_eq!(arena.iter().count(), 2000);
   }
 
   #[test]
   fn test_count_zst() {
     let arena = TypedArena::new();
-    for _ in 0..123456 {
+    for _ in 0..5000 {
       arena.alloc(());
     }
-    assert_eq!(arena.iter().count(), 123456);
+    assert_eq!(arena.iter().count(), 5000);
   }
 
   #[test]
   fn test_nth() {
     let arena = TypedArena::new();
-    for i in 0..123456 {
+    for i in 0..2000 {
       arena.alloc(i);
     }
     let mut iter = arena.iter().copied();
-    assert_eq!(iter.nth(69420).unwrap(), 69420);
-    assert_eq!(iter.next().unwrap(), 69421);
+    assert_eq!(iter.nth(420).unwrap(), 420);
+    assert_eq!(iter.next().unwrap(), 421);
   }
 }

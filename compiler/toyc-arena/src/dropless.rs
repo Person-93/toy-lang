@@ -141,7 +141,7 @@ mod tests {
   #[test]
   fn test_zero_sized_no_alloc() {
     let arena = DroplessArena::default();
-    for _ in 0..100000 {
+    for _ in 0..5000 {
       arena.alloc(());
     }
     assert!(arena.pages.borrow().is_empty());

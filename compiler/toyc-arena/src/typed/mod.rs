@@ -227,7 +227,7 @@ mod tests {
   #[test]
   fn test_zero_sized_no_alloc() {
     let arena = TypedArena::default();
-    for _ in 0..100000 {
+    for _ in 0..5000 {
       arena.alloc(());
     }
     assert!(arena.chunks.borrow().is_empty());
