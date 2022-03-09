@@ -1,3 +1,4 @@
 [alias]
 codegen = "run --package toy-lang-codegen"
 toyc = "run --package toyc --"
+safety-check = "run --manifest-path=src/ci/Cargo.toml --bin=safety"

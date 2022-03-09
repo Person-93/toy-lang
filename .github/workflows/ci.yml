@@ -175,3 +175,8 @@ jobs:
       with:
         command: check
         args: --workspace --all-targets --no-default-features
+
+    - name: Safety Check
+      uses: actions-rs/cargo@v1
+      with:
+        command: safety-check

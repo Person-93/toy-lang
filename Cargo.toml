@@ -3,4 +3,5 @@ members = [
     "compiler/toyc",
     "src/codegen",
 ]
+exclude = ["src/ci"]
 resolver = "2"
