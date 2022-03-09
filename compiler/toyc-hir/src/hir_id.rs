@@ -1,6 +1,6 @@
 use core::{cell::Cell, marker::PhantomData};
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct HirId<'hir>(u32, PhantomData<*const ()>, PhantomData<&'hir ()>);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
