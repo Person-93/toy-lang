@@ -8,10 +8,8 @@ use toyc_span::{
 
 #[derive(Copy, Clone, Debug)]
 pub enum Node<'hir> {
-  Package(&'hir Mod<'hir>),
   Item(&'hir Item<'hir>),
-  Field(&'hir FieldDef<'hir>),
-  GenericParams(&'hir GenericParams<'hir>),
+  FieldDef(&'hir FieldDef<'hir>),
   GenericParam(&'hir GenericParam<'hir>),
   Type(&'hir Type<'hir>),
   Expr(&'hir Expr<'hir>),
@@ -24,10 +22,8 @@ pub enum Node<'hir> {
 impl<'hir> Node<'hir> {
   pub fn id(self) -> HirId<'hir> {
     match self {
-      Node::Package(package) => package.id,
       Node::Item(item) => item.id(),
-      Node::Field(field) => field.id,
-      Node::GenericParams(params) => params.id,
+      Node::FieldDef(field) => field.id,
       Node::GenericParam(param) => param.id,
       Node::Type(type_) => type_.id,
       Node::Expr(expr) => expr.id,
@@ -40,10 +36,8 @@ impl<'hir> Node<'hir> {
 
   pub fn span(self) -> Span {
     match self {
-      Node::Package(package) => package.span,
       Node::Item(item) => item.span(),
-      Node::Field(field) => field.span,
-      Node::GenericParams(params) => params.span,
+      Node::FieldDef(field) => field.span,
       Node::GenericParam(param) => param.span,
       Node::Type(type_) => type_.span,
       Node::Expr(expr) => expr.span,
@@ -53,6 +47,21 @@ impl<'hir> Node<'hir> {
       Node::AttrValue(value) => value.span(),
     }
   }
+}
+
+macro_rules! to_node {
+  ($($ty:ident)*) => {
+    $(impl<'hir> From<&'hir $ty<'hir>> for Node<'hir> {
+      fn from(v: &'hir $ty<'hir>) -> Self {
+        Node::$ty(v)
+      }
+    })*
+  };
+}
+
+to_node! {
+  Item FieldDef GenericParam Type Expr NamedConst
+  Attr AttrData AttrValue
 }
 
 #[derive(Debug)]
