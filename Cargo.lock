@@ -677,6 +677,7 @@ dependencies = [
  "toyc-hir",
  "toyc-session",
  "toyc-span",
+ "toyc-util",
 ]
 
 [[package]]
@@ -732,6 +733,10 @@ dependencies = [
  "serde",
  "unicode-xid",
 ]
+
+[[package]]
+name = "toyc-util"
+version = "0.0.0"
 
 [[package]]
 name = "unicode-xid"
