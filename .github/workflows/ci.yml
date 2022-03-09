@@ -66,6 +66,36 @@ jobs:
         command: feature-matrix
         args: test
 
+  miri:
+    needs: smoke
+    runs-on: ubuntu-latest
+    steps:
+    - name: toolchain-id
+      run: echo "::set-env TOOLCHAIN=$(curl -s https://rust-lang.github.io/rustup-components-history/x86_64-unknown-linux-gnu/miri)"
+
+    - name: toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ env.TOOLCHAIN }}
+        override: true
+        components: miri
+
+    - uses: Swatinem/rust-cache@v1.3.0
+
+    - uses: actions/checkout@v2
+
+    - name: codegen
+      uses: actions-rs/cargo@v1
+      with:
+        command: codegen
+
+    - name: test
+      uses: actions-rs/cargo@v1
+      with:
+        command: miri
+        args: test --package=toyc-arena
+
   docs:
     name: Docs
     needs: smoke
