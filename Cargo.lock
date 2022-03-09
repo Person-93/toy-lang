@@ -705,6 +705,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "toyc-hir-passes"
+version = "0.0.0"
+dependencies = [
+ "toyc-hir",
+ "toyc-session",
+]
+
+[[package]]
 name = "toyc-main"
 version = "0.0.0"
 dependencies = [
@@ -714,6 +722,7 @@ dependencies = [
  "toyc-ast-passes",
  "toyc-errors",
  "toyc-hir",
+ "toyc-hir-passes",
  "toyc-session",
 ]
 

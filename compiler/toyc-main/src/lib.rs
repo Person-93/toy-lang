@@ -8,6 +8,7 @@ use std::{
   process,
 };
 use toyc_errors::emitter::JsonWriterEmitter;
+use toyc_hir::HirContext;
 use toyc_session::Session;
 
 #[derive(Debug, Parser)]
@@ -65,6 +66,9 @@ pub fn main() -> ! {
     None => session.handler.err_exit(1.try_into().unwrap()),
   };
   toyc_ast_passes::check_package(&session.handler, &ast.attrs, &ast.items);
+
+  let hir: HirContext = toyc_ast_lowering::LoweringContext::new(&ast).into();
+  toyc_hir_passes::check_package(&session, &hir);
 
   session.handler.finish();
 
