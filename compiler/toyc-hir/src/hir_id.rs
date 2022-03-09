@@ -30,10 +30,8 @@ impl Default for HirIdFactory<'_> {
 impl<'hir> HirIdFactory<'hir> {
   pub fn new() -> HirIdFactory<'hir> {
     HirIdFactory::LOCK.with(|flag| {
-      if flag.get() {
+      if flag.replace(true) {
         panic!("attempted to make a second hir id factory on the same thread");
-      } else {
-        flag.set(true);
       }
     });
     HirIdFactory(Cell::new(0), PhantomData, PhantomData)
