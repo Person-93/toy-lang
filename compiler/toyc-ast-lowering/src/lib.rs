@@ -10,7 +10,7 @@ use toyc_hir::{
   Expr, ExprKind, Extern, FieldDef, FloatBits, FnRetTy, FnType, Function,
   GenericParam, GenericParamKind, GenericParams, IntBits, Item, LitKind,
   Literal, MutType, Mutability, NumLit, NumLitRadix, NumLitType, Package,
-  PrimitiveType, SelfKind, StructDef, StructDefKind, Trait, TraitConst,
+  Param, PrimitiveType, SelfKind, StructDef, StructDefKind, Trait, TraitConst,
   TraitItem, TraitType, Type, TypeAlias, TypeKind, Unsafety, Visibility,
 };
 use toyc_span::symbol::{self, Ident};
@@ -152,7 +152,17 @@ impl<'hir> LoweringContext<'hir> {
       },
       body_id: function.body.as_ref().map(|expr| {
         let expr = self.arena.alloc(self.lower_expr(expr));
-        self.nodes.borrow_mut().insert(expr).id.to_body_id()
+        let expr = self.nodes.borrow_mut().insert(expr);
+
+        let params = function.params.iter().map(|param| Param {
+          id: self.next_id(),
+          ident: param.ident,
+          ty_span: param.type_.span(),
+          span: param.span,
+        });
+        let params = self.arena.alloc_iter(params);
+
+        self.bodies.borrow_mut().insert(expr, params)
       }),
       span: function.span,
     }
@@ -277,7 +287,12 @@ impl<'hir> LoweringContext<'hir> {
                 id: self.next_id(),
                 ident: c.ident,
                 default: c.default.as_ref().map(|c| AnonConst {
-                  body: self.lower_expr(c).id.to_body_id(),
+                  body: {
+                    let expr = self.lower_expr(c);
+                    let expr = self.arena.alloc(expr);
+                    let expr = self.nodes.borrow_mut().insert(expr);
+                    self.bodies.borrow_mut().insert(expr, &[])
+                  },
                 }),
                 span: c.span,
               })
@@ -413,13 +428,11 @@ impl<'hir> LoweringContext<'hir> {
         name: c.ident,
         kind: GenericParamKind::Const {
           ty: self.arena.alloc(self.lower_type(&c.type_)),
-          default: c.default.as_ref().map(|c| AnonConst {
-            body: self
-              .nodes
-              .borrow_mut()
-              .insert(self.arena.alloc(self.lower_expr(c)))
-              .id
-              .to_body_id(),
+          default: c.default.as_ref().map(|c| {
+            let body = self.arena.alloc(self.lower_expr(c));
+            let body = self.nodes.borrow_mut().insert(body);
+            let body = self.bodies.borrow_mut().insert(body, &[]);
+            AnonConst { body }
           }),
         },
         span: c.span,

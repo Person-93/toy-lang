@@ -1,10 +1,13 @@
 use std::{cell::RefCell, collections::HashMap};
 use toyc_arena::Arena as _;
 use toyc_ast::ast;
-use toyc_hir::{HirArena, HirContext, HirId, HirIdFactory, Node, Package};
+use toyc_hir::{
+  Bodies, HirArena, HirContext, HirId, HirIdFactory, Node, Package,
+};
 
 pub struct LoweringContext<'hir> {
   pub(crate) nodes: RefCell<Nodes<'hir>>,
+  pub(crate) bodies: RefCell<Bodies<'hir>>,
   pub(crate) arena: HirArena<'hir>,
   id_factory: HirIdFactory<'hir>,
   package: Option<&'hir Package<'hir>>,
@@ -14,6 +17,7 @@ impl<'hir> LoweringContext<'hir> {
   pub fn new(ast: &ast::File) -> LoweringContext<'hir> {
     let mut ctx = LoweringContext {
       nodes: Default::default(),
+      bodies: Default::default(),
       arena: HirArena::default(),
       id_factory: Default::default(),
       package: None,
@@ -34,6 +38,7 @@ impl<'hir> Into<HirContext<'hir>> for LoweringContext<'hir> {
     HirContext::new(
       self.arena,
       self.nodes.into_inner().0,
+      self.bodies.into_inner(),
       self.package.unwrap(),
     )
   }

@@ -3,15 +3,11 @@ use core::{cell::Cell, marker::PhantomData};
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct HirId<'hir>(u32, PhantomData<*const ()>, PhantomData<&'hir ()>);
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct BodyId<'hir>(HirId<'hir>);
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct BodyId<'hir>(pub(crate) HirId<'hir>);
 
 impl<'hir> HirId<'hir> {
   pub const ROOT_ID: HirId<'static> = HirId(0, PhantomData, PhantomData);
-
-  pub fn to_body_id(self) -> BodyId<'hir> {
-    BodyId(self)
-  }
 }
 
 #[derive(Debug)]

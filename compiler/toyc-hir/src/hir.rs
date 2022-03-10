@@ -165,15 +165,15 @@ pub enum SelfKind {
   None,
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Body<'hir> {
   pub params: &'hir [Param<'hir>],
-  pub value: Expr<'hir>,
+  pub expr: &'hir Expr<'hir>,
 }
 
 impl Body<'_> {
   pub fn id(&self) -> BodyId {
-    self.value.id.to_body_id()
+    BodyId(self.expr.id)
   }
 }
 
