@@ -1,7 +1,7 @@
 ---
 source: compiler/toyc-ast-lowering/tests/ast-lowering.rs
-assertion_line: 9
-expression: ctx.lower_package(&ast)
+assertion_line: 13
+expression: ctx.root()
 
 ---
 Package {
@@ -16,6 +16,7 @@ Package {
                 ),
                 ident: f @ 3..4,
                 visibility: Inherited,
+                self_kind: None,
                 fn_type: FnType {
                     extern_: No,
                     unsafety: No,
@@ -23,7 +24,6 @@ Package {
                     generics: None,
                     inputs: [],
                     output: Default,
-                    self_kind: None,
                 },
                 body_id: Some(
                     BodyId(

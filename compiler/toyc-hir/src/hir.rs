@@ -127,6 +127,7 @@ pub struct Function<'hir> {
   pub id: HirId<'hir>,
   pub ident: Ident,
   pub visibility: Visibility,
+  pub self_kind: SelfKind,
   pub fn_type: FnType<'hir>,
   pub body_id: Option<BodyId<'hir>>,
   pub span: Span,
@@ -140,7 +141,6 @@ pub struct FnType<'hir> {
   pub generics: Option<GenericParams<'hir>>,
   pub inputs: &'hir [Type<'hir>],
   pub output: FnRetTy<'hir>,
-  pub self_kind: SelfKind,
 }
 
 #[derive(Copy, Clone, Debug)]

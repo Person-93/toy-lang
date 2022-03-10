@@ -109,6 +109,7 @@ impl<'hir> LoweringContext<'hir> {
       id: self.next_id(),
       ident: function.ident,
       visibility: convert_visibility(vis),
+      self_kind: SelfKind::None,
       fn_type: FnType {
         extern_: function.extern_.map_or(Extern::No, |ext| {
           Extern::Yes(match &*ext.value {
@@ -148,7 +149,6 @@ impl<'hir> LoweringContext<'hir> {
               });
           return_type
         },
-        self_kind: SelfKind::None,
       },
       body_id: function.body.as_ref().map(|expr| {
         let expr = self.arena.alloc(self.lower_expr(expr));
