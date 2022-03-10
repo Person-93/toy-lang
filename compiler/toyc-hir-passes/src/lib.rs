@@ -5,7 +5,6 @@ use toyc_hir::HirContext;
 use toyc_session::Session;
 
 pub fn check_package(_session: &Session, _context: &HirContext<'_>) {
-  // TODO process all attributes
   // TODO resolve imports
   // TODO check for use of undefined symbols
   // TODO check types

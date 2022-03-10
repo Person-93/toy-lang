@@ -1,7 +1,6 @@
 use crate::{
-  AnonConst, Attr, AttrData, AttrValue, Body, BodyId, Expr, FieldDef,
-  GenericParam, HirId, Item, Literal, NamedConst, Node, Package, Param,
-  StructDef, TraitItem, Type,
+  AnonConst, Body, BodyId, Expr, FieldDef, GenericParam, HirId, Item, Literal,
+  NamedConst, Node, Package, Param, StructDef, TraitItem, Type,
 };
 use std::collections::HashMap;
 
@@ -90,7 +89,7 @@ toyc_arena::declare_arena! {
     pub consts: NamedConst<'hir>,
   }
   dropless {
-    GenericParam<'hir> AnonConst<'hir> Attr<'hir> AttrData<'hir> AttrValue<'hir>
-    Literal<'hir> StructDef<'hir> TraitItem<'hir> Package<'hir> Param<'hir>
+    GenericParam<'hir> AnonConst<'hir> Literal<'hir> StructDef<'hir>
+    TraitItem<'hir> Package<'hir> Param<'hir>
   }
 }

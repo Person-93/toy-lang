@@ -1,5 +1,4 @@
 use crate::{BodyId, HirId};
-use core::ops::Deref;
 use toyc_span::symbol::StrLit;
 use toyc_span::{
   symbol::{Ident, Symbol},
@@ -14,9 +13,6 @@ pub enum Node<'hir> {
   Type(&'hir Type<'hir>),
   Expr(&'hir Expr<'hir>),
   NamedConst(&'hir NamedConst<'hir>),
-  Attr(&'hir Attr<'hir>),
-  AttrData(&'hir AttrData<'hir>),
-  AttrValue(&'hir AttrValue<'hir>),
 }
 
 impl<'hir> Node<'hir> {
@@ -28,9 +24,6 @@ impl<'hir> Node<'hir> {
       Node::Type(type_) => type_.id,
       Node::Expr(expr) => expr.id,
       Node::NamedConst(const_) => const_.id,
-      Node::Attr(attr) => attr.id,
-      Node::AttrData(data) => data.id,
-      Node::AttrValue(value) => value.id(),
     }
   }
 
@@ -42,9 +35,6 @@ impl<'hir> Node<'hir> {
       Node::Type(type_) => type_.span,
       Node::Expr(expr) => expr.span,
       Node::NamedConst(const_) => const_.span,
-      Node::Attr(attr) => attr.span,
-      Node::AttrData(data) => data.span,
-      Node::AttrValue(value) => value.span(),
     }
   }
 }
@@ -61,12 +51,10 @@ macro_rules! to_node {
 
 to_node! {
   Item FieldDef GenericParam Type Expr NamedConst
-  Attr AttrData AttrValue
 }
 
 #[derive(Debug)]
 pub struct Package<'hir> {
-  pub attrs: &'hir [Attr<'hir>],
   pub items: &'hir [Item<'hir>],
   pub span: Span,
 }
@@ -110,7 +98,6 @@ pub struct Mod<'hir> {
   pub id: HirId<'hir>,
   pub ident: Ident,
   pub vis: Visibility,
-  pub attrs: &'hir [Attr<'hir>],
   pub items: &'hir [&'hir Item<'hir>],
   pub span: Span,
   pub span_in_parent: Option<Span>,
@@ -492,60 +479,6 @@ pub struct NamedConst<'hir> {
 #[derive(Debug)]
 pub struct AnonConst<'hir> {
   pub body: BodyId<'hir>,
-}
-
-#[derive(Debug)]
-pub struct Attr<'hir>(AttrData<'hir>);
-
-impl Attr<'_> {
-  pub fn from_data(data: AttrData) -> Attr {
-    Attr(data)
-  }
-}
-
-impl<'hir> Deref for Attr<'hir> {
-  type Target = AttrData<'hir>;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
-  }
-}
-
-#[derive(Debug)]
-pub struct AttrData<'hir> {
-  pub id: HirId<'hir>,
-  pub ident: Ident,
-  pub kind: AttrKind<'hir>,
-  pub span: Span,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum AttrKind<'hir> {
-  Plain,
-  Assign(&'hir Literal<'hir>),
-  Call(&'hir [AttrValue<'hir>]),
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum AttrValue<'hir> {
-  Lit(&'hir Literal<'hir>),
-  Nested(&'hir AttrData<'hir>),
-}
-
-impl<'hir> AttrValue<'hir> {
-  pub fn id(self) -> HirId<'hir> {
-    match self {
-      AttrValue::Lit(Literal { id, .. })
-      | AttrValue::Nested(AttrData { id, .. }) => *id,
-    }
-  }
-
-  pub fn span(self) -> Span {
-    match self {
-      AttrValue::Lit(Literal { span, .. })
-      | AttrValue::Nested(AttrData { span, .. }) => *span,
-    }
-  }
 }
 
 #[derive(Debug)]

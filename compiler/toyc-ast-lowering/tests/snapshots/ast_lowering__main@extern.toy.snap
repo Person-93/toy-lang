@@ -5,7 +5,6 @@ expression: ctx.root()
 
 ---
 Package {
-    attrs: [],
     items: [
         Function(
             Function {

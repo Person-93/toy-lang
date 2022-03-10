@@ -1,17 +1,19 @@
 #![forbid(unsafe_code)]
 
+// TODO handle attributes
+
 pub use self::context::LoweringContext;
 use core::fmt::{self, Display, Formatter};
 use std::error::Error;
 use toyc_arena::Arena;
 use toyc_ast::ast;
 use toyc_hir::{
-  Abi, AnonConst, Attr, AttrData, AttrKind, AttrValue, Constness, EnumDef,
-  Expr, ExprKind, Extern, FieldDef, FloatBits, FnRetTy, FnType, Function,
-  GenericParam, GenericParamKind, GenericParams, IntBits, Item, LitKind,
-  Literal, MutType, Mutability, NumLit, NumLitRadix, NumLitType, Package,
-  Param, PrimitiveType, SelfKind, StructDef, StructDefKind, Trait, TraitConst,
-  TraitItem, TraitType, Type, TypeAlias, TypeKind, Unsafety, Visibility,
+  Abi, AnonConst, Constness, EnumDef, Expr, ExprKind, Extern, FieldDef,
+  FloatBits, FnRetTy, FnType, Function, GenericParam, GenericParamKind,
+  GenericParams, IntBits, Item, LitKind, Literal, MutType, Mutability, NumLit,
+  NumLitRadix, NumLitType, Package, Param, PrimitiveType, SelfKind, StructDef,
+  StructDefKind, Trait, TraitConst, TraitItem, TraitType, Type, TypeAlias,
+  TypeKind, Unsafety, Visibility,
 };
 use toyc_span::symbol::{self, Ident};
 
@@ -22,14 +24,6 @@ impl<'hir> LoweringContext<'hir> {
   #[must_use]
   fn lower_package(&self, root: &ast::File) -> Package<'hir> {
     Package {
-      attrs: {
-        let attrs = self.nodes.borrow_mut().insert_slice(
-          self
-            .arena
-            .alloc_iter(root.attrs.iter().map(|attr| self.lower_attr(attr))),
-        );
-        attrs
-      },
       items: {
         let items = self
           .arena
@@ -38,49 +32,6 @@ impl<'hir> LoweringContext<'hir> {
         items
       },
       span: root.span,
-    }
-  }
-
-  #[must_use]
-  fn lower_attr(&self, attr: &ast::AttrData) -> Attr<'hir> {
-    Attr::from_data(self.lower_attr_data(attr))
-  }
-
-  #[must_use]
-  fn lower_attr_data(&self, attr_data: &ast::AttrData) -> AttrData<'hir> {
-    AttrData {
-      id: self.next_id(),
-      ident: attr_data.ident,
-      kind: match &attr_data.kind {
-        None => AttrKind::Plain,
-        Some(ast::AttrDataKind::Assign(literal)) => {
-          AttrKind::Assign(self.arena.alloc(self.lower_literal(literal)))
-        }
-        Some(ast::AttrDataKind::Call(args)) => AttrKind::Call(
-          self.nodes.borrow_mut().insert_slice(self.arena.alloc_iter(
-            args.iter().map(|value| self.lower_attr_call_value(value)),
-          )),
-        ),
-      },
-      span: attr_data.span,
-    }
-  }
-
-  #[must_use]
-  fn lower_attr_call_value(
-    &self,
-    value: &ast::AttrCallValue,
-  ) -> AttrValue<'hir> {
-    match value {
-      ast::AttrCallValue::Literal(literal) => {
-        AttrValue::Lit(self.arena.alloc(self.lower_literal(literal)))
-      }
-      ast::AttrCallValue::Nested(inner) => AttrValue::Nested(
-        self
-          .nodes
-          .borrow_mut()
-          .insert(self.arena.alloc(self.lower_attr_data(inner))),
-      ),
     }
   }
 
