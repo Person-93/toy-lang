@@ -731,6 +731,7 @@ name = "toyc-session"
 version = "0.0.0"
 dependencies = [
  "toyc-errors",
+ "toyc-span",
 ]
 
 [[package]]
@@ -738,9 +739,11 @@ name = "toyc-span"
 version = "0.0.0"
 dependencies = [
  "chumsky",
+ "hashbrown 0.12.0",
  "internment",
  "serde",
  "unicode-xid",
+ "xxhash-rust",
 ]
 
 [[package]]
@@ -851,6 +854,12 @@ name = "windows_x86_64_msvc"
 version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "504a2476202769977a040c6364301a3f65d0cc9e3fb08600b2bda150a0488316"
+
+[[package]]
+name = "xxhash-rust"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "886f21441c6731b9e06a9fdacbc5e29319c17a4069c2a511d80349874864702d"
 
 [[package]]
 name = "yaml-rust"

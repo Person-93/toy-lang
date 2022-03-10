@@ -29,12 +29,12 @@ pub struct TestSession {
 }
 
 impl TestSession {
-  pub fn new<T: ToString>(job_name: T) -> TestSession {
+  pub fn new<T: ToString>(job_name: T, src: String) -> TestSession {
     let diagnostics = Rc::new(RwLock::default());
     TestSession {
-      inner: Session::new(
+      inner: Session::from_str(
         job_name.to_string(),
-        None,
+        src,
         Handler::new(Box::new(TestEmitter(diagnostics.clone()))),
       ),
       diagnostics,

@@ -9,3 +9,4 @@ publish = false
 
 [dependencies]
 toyc-errors = { path = "../toyc-errors" }
+toyc-span = { path = "../toyc-span" }

@@ -2,12 +2,12 @@
 
 use clap::{ArgGroup, Parser};
 use std::{
-  fs,
   io::{self, Read},
   path::PathBuf,
   process,
 };
 use toyc_errors::emitter::JsonWriterEmitter;
+use toyc_errors::Handler;
 use toyc_hir::HirContext;
 use toyc_session::Session;
 
@@ -33,34 +33,29 @@ pub fn main() -> ! {
     output,
     stdin: _,
   } = Cli::parse();
-  let session = Session::new(
-    output.file_name().unwrap().to_str().unwrap().to_owned(),
-    input,
-    toyc_errors::Handler::new(Box::new(JsonWriterEmitter::new(
-      io::stderr(),
-      true,
-    ))),
-  );
 
-  let text = match match &session.root_source_file {
-    Some(input) => fs::read_to_string(input),
+  let name = output.file_name().unwrap().to_str().unwrap().to_owned();
+  let handler =
+    Handler::new(Box::new(JsonWriterEmitter::new(io::stderr(), true)));
+
+  let session = match input {
+    Some(input) => Session::new(name, input, handler),
     None => {
       let mut text = String::new();
-      io::stdin().read_to_string(&mut text).map(|_| text)
-    }
-  } {
-    Ok(text) => text,
-    Err(err) => {
-      session
-        .handler
-        .fatal("failed to read package root file")
-        .attach_note(format!("caused by {err}"))
-        .emit();
-      process::exit(1);
+      match io::stdin().read_to_string(&mut text) {
+        Ok(_) => Session::from_str(name, text, handler),
+        Err(err) => {
+          handler
+            .fatal("failed to read package root file from stdin")
+            .attach_note(format!("caused by {err}"))
+            .emit();
+          process::exit(1);
+        }
+      }
     }
   };
 
-  let ast = toyc_ast::parse_single_file(&text, &session.handler);
+  let ast = toyc_ast::parse_single_file(&session.root_source, &session.handler);
   let ast = match ast {
     Some(ast) => ast,
     None => session.handler.err_exit(1.try_into().unwrap()),
