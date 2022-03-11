@@ -413,7 +413,6 @@ impl<W: Write> Printer<'_, '_, W> {
         write!(self.writer, " as ")?;
         self.print_type(ty, indentation + 1)?;
       }
-      ExprKind::Type(ty) => self.print_type(ty, indentation + 1)?,
       ExprKind::FieldAccess(expr, ident) => {
         self.print_expr(expr, indentation + 1)?;
         write!(self.writer, ".{ident}")?;
