@@ -9,6 +9,7 @@ use std::{
 use toyc_errors::emitter::JsonWriterEmitter;
 use toyc_errors::Handler;
 use toyc_hir::HirContext;
+use toyc_hir_passes::definitions::Definitions;
 use toyc_session::Session;
 
 #[derive(Debug, Parser)]
@@ -63,7 +64,8 @@ pub fn main() -> ! {
   toyc_ast_passes::check_package(&session.handler, &ast.attrs, &ast.items);
 
   let hir: HirContext = toyc_ast_lowering::LoweringContext::new(&ast).into();
-  toyc_hir_passes::check_package(&session, &hir);
+  let definitions = Definitions::new(&hir);
+  toyc_hir_passes::check_for_undefined(&session, &hir, definitions.clone());
 
   session.handler.finish();
 
