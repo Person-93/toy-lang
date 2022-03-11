@@ -1,0 +1,20 @@
+[package]
+name = "toyc-macros"
+authors = ["person93 <person93.person93@gmail.com>"]
+version = "0.0.0"
+edition = "2021"
+description = "A toy programming language to play around with"
+license = "MIT OR APACHE"
+publish = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.36"
+quote = "1.0.15"
+
+[dependencies.syn]
+version = "1.0.86"
+default-features = false
+features = ["parsing", "printing", "proc-macro", "derive"]
