@@ -5,6 +5,7 @@ use core::{
   ops::Deref,
 };
 use internment::Intern;
+use toyc_data_structures::fingerprint::{CanBeFingerprinted, Fingerprinter};
 use unicode_xid::UnicodeXID;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
@@ -188,6 +189,12 @@ pub struct Symbol(internment::Intern<&'static str>);
 impl Symbol {
   pub fn new(s: &str) -> Symbol {
     Symbol(Intern::new(Box::leak(s.to_owned().into_boxed_str())))
+  }
+}
+
+impl CanBeFingerprinted for Symbol {
+  fn fingerprint(&self, fingerprinter: &mut Fingerprinter) {
+    fingerprinter.add(self.0.as_ref());
   }
 }
 
