@@ -1,0 +1,11 @@
+[package]
+name = "toyc-hir-pretty"
+authors = ["person93 <person93.person93@gmail.com>"]
+version = "0.0.0"
+edition = "2021"
+description = "A toy programming language to play around with"
+license = "MIT OR APACHE"
+publish = false
+
+[dependencies]
+toyc-hir = { path = "../toyc-hir" }
