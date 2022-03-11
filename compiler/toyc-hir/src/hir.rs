@@ -98,7 +98,7 @@ pub struct Mod<'hir> {
   pub id: HirId<'hir>,
   pub ident: Ident,
   pub vis: Visibility,
-  pub items: &'hir [&'hir Item<'hir>],
+  pub items: &'hir [Item<'hir>],
   pub span: Span,
   pub span_in_parent: Option<Span>,
 }
