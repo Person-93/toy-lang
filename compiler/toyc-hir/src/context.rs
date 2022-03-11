@@ -54,7 +54,7 @@ impl<'hir> HirContext<'hir> {
     self.arena.consts.iter()
   }
 
-  pub fn get_body(&self, body_id: BodyId<'hir>) -> Body<'hir> {
+  pub fn get_body(&self, body_id: BodyId<'_>) -> Body<'hir> {
     self.bodies.get(body_id).unwrap()
   }
 }
@@ -73,7 +73,7 @@ impl<'hir> Bodies<'hir> {
     id
   }
 
-  pub fn get(&self, id: BodyId<'hir>) -> Option<Body<'hir>> {
+  pub fn get(&self, id: BodyId<'_>) -> Option<Body<'hir>> {
     self.0.get(&id.0).copied()
   }
 }

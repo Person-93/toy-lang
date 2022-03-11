@@ -418,7 +418,7 @@ pub enum ExprKind<'hir> {
   },
   Tuple(&'hir [Expr<'hir>]),
   Cast(&'hir Expr<'hir>, &'hir Type<'hir>),
-  Type(&'hir Expr<'hir>, &'hir Type<'hir>),
+  Type(&'hir Type<'hir>),
   FieldAccess(&'hir Expr<'hir>, Ident),
   // TODO AddrOf(BorrowKind, &'hir Expr<'hir>),
   Err,
