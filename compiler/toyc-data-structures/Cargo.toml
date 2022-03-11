@@ -1,0 +1,12 @@
+[package]
+name = "toyc-data-structures"
+authors = ["person93 <person93.person93@gmail.com>"]
+version = "0.0.0"
+edition = "2021"
+description = "A toy programming language to play around with"
+license = "MIT OR APACHE"
+publish = false
+
+[dependencies]
+serde = { version = "1.0.136", features = ["derive"], default-features = false }
+xxhash-rust = { version = "0.8.3", features = ["xxh64"] }
