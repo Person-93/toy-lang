@@ -80,16 +80,17 @@ impl<'hir> Bodies<'hir> {
 
 toyc_arena::declare_arena! {
   #[derive(Default)]
-  pub struct HirArena<'hir> { _m: (), }
-  Typed {
-    pub items: Item<'hir>,
-    pub field_defs: FieldDef<'hir>,
-    pub types: Type<'hir>,
-    pub exprs: Expr<'hir>,
-    pub consts: NamedConst<'hir>,
-  }
-  dropless {
-    GenericParam<'hir> AnonConst<'hir> Literal<'hir> StructDef<'hir>
-    TraitItem<'hir> Package<'hir> Param<'hir>
+  pub struct HirArena<'hir> {
+    {
+      pub items: Item<'hir>,
+      pub field_defs: FieldDef<'hir>,
+      pub types: Type<'hir>,
+      pub exprs: Expr<'hir>,
+      pub consts: NamedConst<'hir>,
+    }
+    dropless {
+      GenericParam<'hir> AnonConst<'hir> Literal<'hir> StructDef<'hir>
+      TraitItem<'hir> Package<'hir> Param<'hir>
+    }
   }
 }

@@ -86,28 +86,18 @@ macro_rules! declare_arena {
     (
       $(#[$attr:meta])*
       $visibility:vis struct $arena:ident<$lifetime:lifetime> {
-        $(
-          $(#[$field_attr:meta])*
-          $field_vis:vis $field:ident: $field_ty:ty
-        ),+,
+        $({ $($typed_vis:vis $alias:ident: $typed:ty),*, })?
+        $($dropless:ident { $($anon:ty)* })*
       }
-      Typed {
-        $($typed_vis:vis $alias:ident: $typed:ty),*,
-      }
-      $($dropless:ident { $($anon:ty)* })*
   ) => {
     $(#[$attr])*
     $visibility struct $arena<$lifetime> {
-      $(
-        $(#[$field_attr])*
-        $field_vis $field: $field_ty
-      ),+,
-
-      $($alias: $crate::TypedArena<$typed>),*,
+      __marker: ::core::marker::PhantomData<&$lifetime ()>,
+      $($($alias: $crate::TypedArena<$typed>),*,)?
       $($dropless: $crate::DroplessArena),*
     }
 
-    #[allow(dead_code)]
+    $(#[allow(dead_code)]
     impl<$lifetime> $arena<$lifetime> {
       $(
         $typed_vis fn $alias(
@@ -116,11 +106,11 @@ macro_rules! declare_arena {
           self.$alias.iter()
         }
       )*
-    }
+    })*
 
     #[allow(clippy::mut_from_ref)]
     const _: () = {
-      $(
+      $($(
         #[automatically_derived]
         impl<$lifetime> $crate::Arena<$lifetime, $typed> for $arena<$lifetime> {
           fn alloc(&self, object: $typed) -> &$lifetime mut $typed {
@@ -135,7 +125,7 @@ macro_rules! declare_arena {
             self.$alias.alloc_iter(iter)
           }
         }
-      )*
+      )*)?
 
       $($(
         #[automatically_derived]
@@ -166,11 +156,10 @@ mod tests {
 
   declare_arena! {
     #[derive(Default)]
-    struct Arena<'a> { _m: (), }
-
-    Typed { d: DropCounter<'a>, }
-
-    dropless { i128 }
+    struct Arena<'a> {
+      { d: DropCounter<'a>, }
+      dropless { i128 }
+    }
   }
 
   #[test]
