@@ -689,6 +689,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "toyc-data-structures"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "xxhash-rust",
+]
+
+[[package]]
 name = "toyc-errors"
 version = "0.0.0"
 dependencies = [
@@ -752,6 +760,7 @@ dependencies = [
  "hashbrown 0.12.0",
  "internment",
  "serde",
+ "toyc-data-structures",
  "unicode-xid",
  "xxhash-rust",
 ]

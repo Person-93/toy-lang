@@ -1,23 +1,21 @@
-use alloc::rc::Rc;
-use alloc::string::String;
-use core::hash::{Hash, Hasher};
+use alloc::{rc::Rc, string::String};
 use core::ops::Deref;
 use hashbrown::HashMap;
-use xxhash_rust::xxh64::Xxh64;
+use toyc_data_structures::fingerprint::{Fingerprint, Fingerprinter};
 
 /// A hash of the source text and any additional identifier (usually the file path)
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct SourceId(u64);
+pub struct SourceId(Fingerprint);
 
 #[derive(Debug, Default)]
 pub struct SourceMap(HashMap<SourceId, Rc<str>>);
 
 impl SourceMap {
   pub fn insert<S: AsRef<str>>(&mut self, ident: S, text: String) -> SrcRef {
-    let mut hasher = Xxh64::new(0);
-    ident.as_ref().hash(&mut hasher);
-    text.hash(&mut hasher);
-    let id = SourceId(hasher.finish());
+    let mut fingerprinter = Fingerprinter::new();
+    fingerprinter.add(ident.as_ref());
+    fingerprinter.add(&text);
+    let id = SourceId(fingerprinter.finish());
     SrcRef(
       self
         .0
