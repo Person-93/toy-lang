@@ -26,3 +26,12 @@ impl Literal {
     }
   }
 }
+
+impl Type {
+  pub fn span(&self) -> Span {
+    match self {
+      Type::Ident(ident) => ident.span,
+      Type::Ref(inner) => inner.span(),
+    }
+  }
+}
