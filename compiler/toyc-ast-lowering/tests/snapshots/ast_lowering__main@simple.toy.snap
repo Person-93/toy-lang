@@ -1,47 +1,9 @@
 ---
 source: compiler/toyc-ast-lowering/tests/ast-lowering.rs
-assertion_line: 13
-expression: ctx.root()
+assertion_line: 15
+expression: pretty_hir
 
 ---
-Package {
-    items: [
-        Function(
-            Function {
-                id: HirId(
-                    1,
-                    PhantomData,
-                    PhantomData,
-                ),
-                ident: f @ 3..4,
-                visibility: Inherited,
-                self_kind: None,
-                fn_type: FnType {
-                    extern_: No,
-                    unsafety: No,
-                    constness: No,
-                    generics: None,
-                    inputs: [],
-                    output: Default,
-                },
-                body_id: Some(
-                    BodyId(
-                        HirId(
-                            2,
-                            PhantomData,
-                            PhantomData,
-                        ),
-                    ),
-                ),
-                span: Span {
-                    lo: 0,
-                    hi: 10,
-                },
-            },
-        ),
-    ],
-    span: Span {
-        lo: 0,
-        hi: 10,
-    },
+
+fn f(): {
 }

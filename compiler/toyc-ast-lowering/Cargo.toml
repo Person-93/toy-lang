@@ -16,6 +16,7 @@ toyc-span = { path = "../toyc-span" }
 
 [dev-dependencies]
 test-util = { path = "../../src/test-util" }
+toyc-hir-pretty = { path = "../toyc-hir-pretty" }
 
 [[test]]
 name = "ast-lowering"

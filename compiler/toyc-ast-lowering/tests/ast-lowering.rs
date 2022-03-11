@@ -1,4 +1,4 @@
-use test_util::{assert_debug_snapshot, snapshots, TestSession};
+use test_util::{assert_snapshot, snapshots, TestSession};
 use toyc_ast_lowering::LoweringContext;
 use toyc_hir::HirContext;
 
@@ -10,6 +10,8 @@ fn main() {
         .unwrap();
     let ctx = LoweringContext::new(&ast);
     let ctx: HirContext = ctx.into();
-    assert_debug_snapshot!(ctx.root());
+    let mut pretty_hir = String::new();
+    toyc_hir_pretty::print(&ctx, &mut pretty_hir).unwrap();
+    assert_snapshot!(pretty_hir);
   });
 }

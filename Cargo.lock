@@ -675,6 +675,7 @@ dependencies = [
  "toyc-arena",
  "toyc-ast",
  "toyc-hir",
+ "toyc-hir-pretty",
  "toyc-session",
  "toyc-span",
 ]
@@ -710,6 +711,13 @@ version = "0.0.0"
 dependencies = [
  "toyc-hir",
  "toyc-session",
+]
+
+[[package]]
+name = "toyc-hir-pretty"
+version = "0.0.0"
+dependencies = [
+ "toyc-hir",
 ]
 
 [[package]]
