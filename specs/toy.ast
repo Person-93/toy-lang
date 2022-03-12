@@ -40,7 +40,10 @@ statement = attr*:attrs expr semi
 vis = kw_pub delim[paren]<vis_kind>?
 vis_kind = kw_super | kw_package
 
-type = ident | (ampersand type)~:ref
+type = type_modifier?:modifier kw_mut?:mutable path
+type_modifier = ampersand:ref | star:ptr
+path = segment+:segments
+segment = ident generic_params?:generics
 
 type_alias = kw_type ident generic_params? equals type semi
 

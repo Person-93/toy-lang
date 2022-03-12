@@ -21,9 +21,24 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                             generic_params: None,
                             params: [],
                             return_type: Some(
-                                Ident(
-                                    i8 @ 26..28,
-                                ),
+                                Type {
+                                    modifier: None,
+                                    mutable: false,
+                                    path: [
+                                        Segment {
+                                            ident: i8 @ 26..28,
+                                            generics: None,
+                                            span: Span {
+                                                lo: 26,
+                                                hi: 28,
+                                            },
+                                        },
+                                    ],
+                                    span: Span {
+                                        lo: 26,
+                                        hi: 28,
+                                    },
+                                },
                             ),
                             body: Some(
                                 Expr {
@@ -89,9 +104,24 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                             generic_params: None,
                             params: [],
                             return_type: Some(
-                                Ident(
-                                    usize @ 62..67,
-                                ),
+                                Type {
+                                    modifier: None,
+                                    mutable: false,
+                                    path: [
+                                        Segment {
+                                            ident: usize @ 62..67,
+                                            generics: None,
+                                            span: Span {
+                                                lo: 62,
+                                                hi: 67,
+                                            },
+                                        },
+                                    ],
+                                    span: Span {
+                                        lo: 62,
+                                        hi: 67,
+                                    },
+                                },
                             ),
                             body: Some(
                                 Expr {
@@ -148,9 +178,24 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                             generic_params: None,
                             params: [],
                             return_type: Some(
-                                Ident(
-                                    usize @ 105..110,
-                                ),
+                                Type {
+                                    modifier: None,
+                                    mutable: false,
+                                    path: [
+                                        Segment {
+                                            ident: usize @ 105..110,
+                                            generics: None,
+                                            span: Span {
+                                                lo: 105,
+                                                hi: 110,
+                                            },
+                                        },
+                                    ],
+                                    span: Span {
+                                        lo: 105,
+                                        hi: 110,
+                                    },
+                                },
                             ),
                             body: None,
                             span: Span {

@@ -108,7 +108,7 @@ impl<'hir> LoweringContext<'hir> {
         let params = function.params.iter().map(|param| Param {
           id: self.next_id(),
           ident: param.ident,
-          ty_span: param.type_.span(),
+          ty_span: param.type_.span,
           span: param.span,
         });
         let params = self.arena.alloc_iter(params);
@@ -406,46 +406,70 @@ impl<'hir> LoweringContext<'hir> {
 
   #[must_use]
   fn lower_type(&self, type_: &ast::Type) -> Type<'hir> {
-    match type_ {
-      ast::Type::Ident(ident) => Type {
-        id: self.next_id(),
-        kind: match &*ident.name {
-          "u8" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::Eight)),
-          "u16" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::Sixteen)),
-          "u32" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::ThirtyTwo)),
-          "u64" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::SixtyFour)),
-          "u128" => {
-            TypeKind::Primitive(PrimitiveType::Uint(IntBits::OneTwentyEight))
-          }
-          "usize" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::Size)),
+    let kind = match type_.as_ident() {
+      Some(ident) => match &*ident.name {
+        "u8" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::Eight)),
+        "u16" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::Sixteen)),
+        "u32" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::ThirtyTwo)),
+        "u64" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::SixtyFour)),
+        "u128" => {
+          TypeKind::Primitive(PrimitiveType::Uint(IntBits::OneTwentyEight))
+        }
+        "usize" => TypeKind::Primitive(PrimitiveType::Uint(IntBits::Size)),
 
-          "i8" => TypeKind::Primitive(PrimitiveType::Int(IntBits::Eight)),
-          "i16" => TypeKind::Primitive(PrimitiveType::Int(IntBits::Sixteen)),
-          "i32" => TypeKind::Primitive(PrimitiveType::Int(IntBits::ThirtyTwo)),
-          "i64" => TypeKind::Primitive(PrimitiveType::Int(IntBits::SixtyFour)),
-          "i128" => {
-            TypeKind::Primitive(PrimitiveType::Int(IntBits::OneTwentyEight))
-          }
-          "isize" => TypeKind::Primitive(PrimitiveType::Int(IntBits::Size)),
+        "i8" => TypeKind::Primitive(PrimitiveType::Int(IntBits::Eight)),
+        "i16" => TypeKind::Primitive(PrimitiveType::Int(IntBits::Sixteen)),
+        "i32" => TypeKind::Primitive(PrimitiveType::Int(IntBits::ThirtyTwo)),
+        "i64" => TypeKind::Primitive(PrimitiveType::Int(IntBits::SixtyFour)),
+        "i128" => {
+          TypeKind::Primitive(PrimitiveType::Int(IntBits::OneTwentyEight))
+        }
+        "isize" => TypeKind::Primitive(PrimitiveType::Int(IntBits::Size)),
 
-          "str" => TypeKind::Primitive(PrimitiveType::Str),
+        "str" => TypeKind::Primitive(PrimitiveType::Str),
 
-          _ => TypeKind::Path(*ident),
-        },
-        span: ident.span,
+        _ => TypeKind::Path(ident),
       },
-      ast::Type::Ref(inner) => {
-        let inner = self.arena.alloc(self.lower_type(inner));
-        Type {
+      None => todo!(),
+    };
+
+    let kind = match &type_.modifier {
+      None => kind,
+      Some(modifier) => {
+        let mutability = if type_.mutable {
+          Mutability::Yes
+        } else {
+          Mutability::No
+        };
+
+        let inner = Type {
           id: self.next_id(),
-          kind: TypeKind::Ref(MutType {
-            inner,
-            mutability: Mutability::No,
-          }),
-          // TODO get span of the outer type
-          span: inner.span,
+          kind,
+          span: type_
+            .path
+            .first()
+            .unwrap()
+            .span
+            .combine(type_.path.last().unwrap().span),
+        };
+        let inner = self.arena.alloc(inner);
+        let inner = self.nodes.borrow_mut().insert(inner);
+
+        match modifier {
+          ast::TypeModifier::Ref => {
+            TypeKind::Ref(MutType { inner, mutability })
+          }
+          ast::TypeModifier::Ptr => {
+            TypeKind::Ptr(MutType { inner, mutability })
+          }
         }
       }
+    };
+
+    Type {
+      id: self.next_id(),
+      kind,
+      span: type_.span,
     }
   }
 

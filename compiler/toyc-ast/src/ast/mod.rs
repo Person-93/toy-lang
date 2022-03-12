@@ -4,7 +4,7 @@ mod generated;
 
 pub use generated::*;
 use toyc_span::{
-  symbol::{BoolLit, NumLit, StrLit},
+  symbol::{BoolLit, Ident, NumLit, StrLit},
   Span,
 };
 
@@ -28,10 +28,16 @@ impl Literal {
 }
 
 impl Type {
-  pub fn span(&self) -> Span {
-    match self {
-      Type::Ident(ident) => ident.span,
-      Type::Ref(inner) => inner.span(),
+  pub fn as_ident(&self) -> Option<Ident> {
+    if self.path.len() == 1 {
+      let segment = self.path.first().unwrap();
+      if segment.generics.is_none() {
+        Some(segment.ident)
+      } else {
+        None
+      }
+    } else {
+      None
     }
   }
 }

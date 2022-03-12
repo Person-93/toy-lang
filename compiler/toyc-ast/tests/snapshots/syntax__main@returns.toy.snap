@@ -19,11 +19,26 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                             generic_params: None,
                             params: [],
                             return_type: Some(
-                                Ref(
-                                    Ident(
-                                        str @ 20..23,
+                                Type {
+                                    modifier: Some(
+                                        Ref,
                                     ),
-                                ),
+                                    mutable: false,
+                                    path: [
+                                        Segment {
+                                            ident: str @ 20..23,
+                                            generics: None,
+                                            span: Span {
+                                                lo: 20,
+                                                hi: 23,
+                                            },
+                                        },
+                                    ],
+                                    span: Span {
+                                        lo: 19,
+                                        hi: 23,
+                                    },
+                                },
                             ),
                             body: Some(
                                 Expr {
@@ -60,9 +75,24 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                             generic_params: None,
                             params: [],
                             return_type: Some(
-                                Ident(
-                                    i8 @ 59..61,
-                                ),
+                                Type {
+                                    modifier: None,
+                                    mutable: false,
+                                    path: [
+                                        Segment {
+                                            ident: i8 @ 59..61,
+                                            generics: None,
+                                            span: Span {
+                                                lo: 59,
+                                                hi: 61,
+                                            },
+                                        },
+                                    ],
+                                    span: Span {
+                                        lo: 59,
+                                        hi: 61,
+                                    },
+                                },
                             ),
                             body: Some(
                                 Expr {

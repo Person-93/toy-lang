@@ -1,8 +1,8 @@
 use crate::ast::{
   AssociatedConst, AssociatedType, AttrData, CodeBlock, ConstParam, Enum, Expr,
   ExprFragment, Function, FunctionParam, GenericParam, Item, ItemKind, Literal,
-  Statement, Struct, StructBody, StructField, Trait, TraitItem, TraitItemKind,
-  TupleField, Type, TypeAlias, TypeParam, Variant, VisKind,
+  Segment, Statement, Struct, StructBody, StructField, Trait, TraitItem,
+  TraitItemKind, TupleField, Type, TypeAlias, TypeParam, Variant, VisKind,
 };
 use toyc_span::symbol::{BoolLit, Ident, NumLit, StrLit};
 
@@ -84,6 +84,10 @@ pub trait Visitor {
 
   fn walk_type(&mut self, type_: &Type) {
     walk_type(self, type_);
+  }
+
+  fn walk_segment(&mut self, segment: &Segment) {
+    walk_segment(self, segment);
   }
 
   fn walk_struct_field(&mut self, struct_field: &StructField) {
@@ -249,8 +253,8 @@ pub fn walk_struct<V: Visitor + ?Sized>(
   struct_: &Struct,
 ) {
   visitor.walk_attrs(attrs);
-  if let Some(visiblity) = visibility {
-    visitor.walk_visibility(visiblity);
+  if let Some(visibility) = visibility {
+    visitor.walk_visibility(visibility);
   }
   let Struct {
     ident,
@@ -389,9 +393,15 @@ pub fn walk_param<V: Visitor + ?Sized>(visitor: &mut V, param: &FunctionParam) {
 }
 
 pub fn walk_type<V: Visitor + ?Sized>(visitor: &mut V, type_: &Type) {
-  match type_ {
-    Type::Ident(ident) => visitor.walk_ident(*ident),
-    Type::Ref(inner) => visitor.walk_type(inner),
+  for segment in &type_.path {
+    visitor.walk_segment(segment);
+  }
+}
+
+pub fn walk_segment<V: Visitor + ?Sized>(visitor: &mut V, segment: &Segment) {
+  visitor.walk_ident(segment.ident);
+  if let Some(generics) = &segment.generics {
+    visitor.walk_generic_params(generics);
   }
 }
 
