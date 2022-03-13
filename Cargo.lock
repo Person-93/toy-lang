@@ -731,6 +731,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "toyc-macros"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "toyc-main"
 version = "0.0.0"
 dependencies = [
@@ -761,8 +770,8 @@ dependencies = [
  "internment",
  "serde",
  "toyc-data-structures",
+ "toyc-macros",
  "unicode-xid",
- "xxhash-rust",
 ]
 
 [[package]]

@@ -3,8 +3,11 @@ use core::{
   ops::Range,
 };
 use serde::Serialize;
+use toyc_macros::CanBeFingerprinted;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Serialize)]
+#[derive(
+  Copy, Clone, Debug, Eq, PartialEq, Hash, Serialize, CanBeFingerprinted,
+)]
 pub struct Span {
   pub lo: BytePos,
   pub hi: BytePos,
@@ -66,7 +69,17 @@ impl chumsky::Span for Span {
   }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize)]
+#[derive(
+  Copy,
+  Clone,
+  Ord,
+  PartialOrd,
+  Eq,
+  PartialEq,
+  Hash,
+  Serialize,
+  CanBeFingerprinted,
+)]
 #[serde(transparent)]
 pub struct BytePos(pub u32);
 

@@ -6,9 +6,10 @@ use core::{
 };
 use internment::Intern;
 use toyc_data_structures::fingerprint::{CanBeFingerprinted, Fingerprinter};
+use toyc_macros::CanBeFingerprinted;
 use unicode_xid::UnicodeXID;
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, CanBeFingerprinted)]
 pub struct Ident {
   pub name: Symbol,
   pub span: Span,
