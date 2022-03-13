@@ -11,9 +11,9 @@ use toyc_hir::{
   Abi, AnonConst, Constness, EnumDef, Expr, ExprKind, Extern, FieldDef,
   FloatBits, FnRetTy, FnType, Function, GenericParam, GenericParamKind,
   GenericParams, IntBits, Item, LitKind, Literal, MutType, Mutability, NumLit,
-  NumLitRadix, NumLitType, Package, Param, PrimitiveType, SelfKind, StructDef,
-  StructDefKind, Trait, TraitConst, TraitItem, TraitType, Type, TypeAlias,
-  TypeKind, Unsafety, Visibility,
+  NumLitRadix, NumLitType, Package, Param, PrimitiveType, SelfKind, Static,
+  StructDef, StructDefKind, Trait, TraitConst, TraitItem, TraitType, Type,
+  TypeAlias, TypeKind, Unsafety, Visibility,
 };
 use toyc_span::symbol::{self, Ident};
 
@@ -38,6 +38,7 @@ impl<'hir> LoweringContext<'hir> {
   #[must_use]
   fn lower_item(&self, item: &ast::Item) -> Item<'hir> {
     match &item.item_kind {
+      ast::ItemKind::Static(s) => Item::Static(self.lower_static(s, &item.vis)),
       ast::ItemKind::Function(f) => {
         Item::Function(self.lower_function(f, &item.vis))
       }
@@ -47,6 +48,27 @@ impl<'hir> LoweringContext<'hir> {
       ast::ItemKind::TypeAlias(ta) => {
         Item::TypeAlias(self.lower_type_alias(ta, &item.vis))
       }
+    }
+  }
+
+  #[must_use]
+  fn lower_static(&self, static_: &ast::Static, vis: &AstVis) -> Static<'hir> {
+    Static {
+      id: self.next_id(),
+      ident: static_.ident,
+      vis: convert_visibility(vis),
+      value: AnonConst {
+        body: {
+          let expr = self.arena.alloc(self.lower_expr(&static_.expr));
+          let expr = self.nodes.borrow_mut().insert(expr);
+          self.bodies.borrow_mut().insert(expr, &[])
+        },
+      },
+      span: static_.span,
+      constness: match static_.static_kind {
+        ast::StaticKind::KwStatic => Constness::No,
+        ast::StaticKind::KwConst => Constness::Yes,
+      },
     }
   }
 
@@ -69,8 +91,16 @@ impl<'hir> LoweringContext<'hir> {
             _ => Abi::Err(ext),
           })
         }),
-        unsafety: Unsafety::No,
-        constness: Constness::No,
+        unsafety: if function.unsafe_ {
+          Unsafety::Yes
+        } else {
+          Unsafety::No
+        },
+        constness: if function.const_ {
+          Constness::Yes
+        } else {
+          Constness::No
+        },
         generics: {
           let params = function
             .generic_params

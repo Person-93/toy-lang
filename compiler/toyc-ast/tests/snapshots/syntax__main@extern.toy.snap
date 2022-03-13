@@ -17,6 +17,8 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                             extern_: Some(
                                 "C",
                             ),
+                            const_: false,
+                            unsafe_: false,
                             ident: answer @ 14..20,
                             generic_params: None,
                             params: [],
@@ -100,6 +102,8 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                             extern_: Some(
                                 "C",
                             ),
+                            const_: false,
+                            unsafe_: false,
                             ident: ping @ 52..56,
                             generic_params: None,
                             params: [],
@@ -174,6 +178,8 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                             extern_: Some(
                                 "C",
                             ),
+                            const_: false,
+                            unsafe_: false,
                             ident: pong @ 95..99,
                             generic_params: None,
                             params: [],

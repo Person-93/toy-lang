@@ -15,6 +15,8 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                     item_kind: Function(
                         Function {
                             extern_: None,
+                            const_: false,
+                            unsafe_: false,
                             ident: return_str @ 3..13,
                             generic_params: None,
                             params: [],
@@ -71,6 +73,8 @@ expression: "ast::parse::file().parse_recovery(tokens)"
                     item_kind: Function(
                         Function {
                             extern_: None,
+                            const_: false,
+                            unsafe_: false,
                             ident: return_num @ 43..53,
                             generic_params: None,
                             params: [],

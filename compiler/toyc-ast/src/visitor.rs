@@ -1,8 +1,9 @@
 use crate::ast::{
   AssociatedConst, AssociatedType, AttrData, CodeBlock, ConstParam, Enum, Expr,
   ExprFragment, Function, FunctionParam, GenericParam, Item, ItemKind, Literal,
-  Segment, Statement, Struct, StructBody, StructField, Trait, TraitItem,
-  TraitItemKind, TupleField, Type, TypeAlias, TypeParam, Variant, VisKind,
+  Segment, Statement, Static, Struct, StructBody, StructField, Trait,
+  TraitItem, TraitItemKind, TupleField, Type, TypeAlias, TypeParam, Variant,
+  VisKind,
 };
 use toyc_span::symbol::{BoolLit, Ident, NumLit, StrLit};
 
@@ -19,6 +20,15 @@ pub trait Visitor {
 
   fn walk_mod(&mut self, attrs: &[AttrData], items: &[Item]) {
     walk_mod(self, attrs, items);
+  }
+
+  fn walk_static(
+    &mut self,
+    attrs: &[AttrData],
+    visibility: Option<Option<&VisKind>>,
+    static_: &Static,
+  ) {
+    walk_static(self, attrs, visibility, static_);
   }
 
   fn walk_function(
@@ -178,6 +188,7 @@ fn package_or_mod<V: Visitor + ?Sized>(
     } = item;
     let vis = vis.as_ref().map(Option::as_ref);
     match item_kind {
+      ItemKind::Static(static_) => visitor.walk_static(attrs, vis, static_),
       ItemKind::Function(function) => {
         visitor.walk_function(attrs, vis, function)
       }
@@ -201,6 +212,28 @@ pub fn walk_attr<V: Visitor + ?Sized>(visitor: &mut V, attr: &AttrData) {
   visitor.walk_attr(attr);
 }
 
+pub fn walk_static<V: Visitor + ?Sized>(
+  visitor: &mut V,
+  attrs: &[AttrData],
+  visibility: Option<Option<&VisKind>>,
+  static_: &Static,
+) {
+  visitor.walk_attrs(attrs);
+  if let Some(visibility) = visibility {
+    visitor.walk_visibility(visibility);
+  }
+  let Static {
+    static_kind: _,
+    ident,
+    type_,
+    expr,
+    span: _,
+  } = static_;
+  visitor.walk_ident(*ident);
+  visitor.walk_type(type_);
+  visitor.walk_expr(expr);
+}
+
 pub fn walk_function<V: Visitor + ?Sized>(
   visitor: &mut V,
   attrs: &[AttrData],
@@ -213,6 +246,8 @@ pub fn walk_function<V: Visitor + ?Sized>(
   }
   let Function {
     extern_,
+    const_: _,
+    unsafe_: _,
     ident,
     generic_params,
     params,

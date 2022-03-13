@@ -7,10 +7,13 @@ attr_data_kind = (equals literal):assign | delim[paren]<attr_call_value,*>:call
 attr_call_value = literal | attr_data~:nested
 
 item = attr*:attrs vis? item_kind
-item_kind = function | struct | enum | trait | type_alias
+item_kind = static | function | struct | enum | trait | type_alias
 
-function = (kw_extern str_lit)?:extern kw_fn ident generic_params? \
-           delim[paren]<function_param,*>:params \
+static = static_kind ident colon type assign expr semi
+static_kind = kw_static | kw_const
+
+function = (kw_extern str_lit)?:extern kw_const?:const kw_unsafe?:unsafe kw_fn \
+           ident generic_params? delim[paren]<function_param,*>:params \
            (returns type)?:return_type ((colon expr) | semi):body
 function_param = attr*:attrs ident colon type
 

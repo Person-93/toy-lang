@@ -472,9 +472,10 @@ pub enum UnOp {
 pub struct Static<'hir> {
   pub id: HirId<'hir>,
   pub ident: Ident,
+  pub vis: Visibility,
   pub value: AnonConst<'hir>,
   pub span: Span,
-  pub is_const: bool,
+  pub constness: Constness,
 }
 
 #[derive(Debug)]
