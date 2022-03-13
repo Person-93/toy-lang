@@ -7,8 +7,8 @@ use toyc_hir::{
   Extern, FieldDef, FloatBits, FnRetTy, FnType, Function, GenericParam,
   GenericParamKind, GenericParams, HirContext, IntBits, Item, LitKind, Mod,
   MutType, Mutability, NumLit, NumLitRadix, NumLitType, PrimitiveType,
-  SelfKind, StructDef, StructDefKind, Trait, Type, TypeAlias, TypeKind, UnOp,
-  Unsafety, Visibility,
+  SelfKind, Static, StructDef, StructDefKind, Trait, Type, TypeAlias, TypeKind,
+  UnOp, Unsafety, Visibility,
 };
 
 pub fn print<W: Write>(context: &HirContext<'_>, writer: &mut W) -> Result {
@@ -31,6 +31,7 @@ impl<W: Write> Printer<'_, '_, W> {
         Item::Struct(s) => self.print_struct(s, 0),
         Item::Trait(t) => self.print_trait(t, 0),
         Item::TypeAlias(t) => self.print_type_alias(t, 0),
+        Item::Static(s) => self.print_static(s, 0),
       }?;
       writeln!(self.writer)?;
     }
@@ -221,6 +222,14 @@ impl<W: Write> Printer<'_, '_, W> {
     _indentation: u8,
   ) -> Result {
     todo!("print type alias")
+  }
+
+  fn print_static(
+    &mut self,
+    _static_: &Static<'_>,
+    _indentation: u8,
+  ) -> Result {
+    todo!("print static")
   }
 
   fn print_expr(&mut self, expr: &Expr<'_>, indentation: u8) -> Result {
@@ -587,10 +596,6 @@ impl<W: Write> Printer<'_, '_, W> {
           self.print_type(member, indentation + 1)?;
         }
         write!(self.writer, ")")?;
-      }
-      TypeKind::Enum(EnumDef { ident, .. })
-      | TypeKind::Struct(StructDef { ident, .. }) => {
-        write!(self.writer, "{ident}")?
       }
       TypeKind::Infer => write!(self.writer, "_")?,
       TypeKind::Err => write!(self.writer, "<INVALID-TYPE>")?,

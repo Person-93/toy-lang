@@ -1,6 +1,4 @@
-use crate::definitions::{
-  Binding, Constant, Definition, Definitions, UserType,
-};
+use crate::definitions::{Binding, Definition, Definitions, Static, UserType};
 use alloc::rc::Rc;
 use toyc_hir::{
   EnumDef, Expr, ExprKind, FnRetTy, Function, GenericParamKind, GenericParams,
@@ -38,6 +36,9 @@ pub(crate) fn check_items(
       }
       Item::TypeAlias(type_alias) => {
         check_type_alias(session, context, definitions.clone(), type_alias)
+      }
+      Item::Static(static_) => {
+        check_static(session, context, definitions.clone(), static_)
       }
     }
   }
@@ -162,6 +163,14 @@ fn check_type_alias(
   todo!("check type alias for use of undefined symbols")
 }
 
+fn check_static(
+  _session: &Session,
+  _context: &HirContext<'_>,
+  _definitions: Rc<Definitions<'_, '_>>,
+  _static_: &toyc_hir::Static<'_>,
+) {
+}
+
 fn check_expr(
   session: &Session,
   context: &HirContext<'_>,
@@ -279,7 +288,7 @@ fn check_generic_params<'hir: 'a, 'a>(
             check_expr(session, context, definitions, body.expr);
           }
           definitions.defs.entry(generic.name).or_default().constant =
-            Some(Constant::GenericPAram);
+            Some(Static::GenericParam);
         }
       }
     }
@@ -334,10 +343,7 @@ impl<'hir: 'a, 'a> Definitions<'hir, 'a> {
         }
         Ok(())
       }
-      TypeKind::Enum(_)
-      | TypeKind::Struct(_)
-      | TypeKind::Infer
-      | TypeKind::Err => Ok(()),
+      TypeKind::Infer | TypeKind::Err => Ok(()),
     }
   }
 }

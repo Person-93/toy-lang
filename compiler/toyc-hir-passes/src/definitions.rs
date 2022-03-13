@@ -1,8 +1,7 @@
 use alloc::rc::{Rc, Weak};
 use hashbrown::HashMap;
 use toyc_hir::{
-  EnumDef, Expr, Function, HirContext, Item, NamedConst, StructDef, Trait,
-  Type, TypeAlias,
+  EnumDef, Expr, Function, HirContext, Item, StructDef, Trait, Type, TypeAlias,
 };
 use toyc_span::symbol::Ident;
 
@@ -79,6 +78,14 @@ impl<'hir: 'a, 'a> Definitions<'hir, 'a> {
             .or_default()
             .user_type = Some(UserType::TypeAlias(type_alias))
         }
+        Item::Static(static_) => {
+          Rc::get_mut(&mut definitions)
+            .unwrap()
+            .defs
+            .entry(static_.ident)
+            .or_default()
+            .constant = Some(Static::Named(static_))
+        }
       }
     }
     definitions
@@ -89,7 +96,7 @@ impl<'hir: 'a, 'a> Definitions<'hir, 'a> {
 pub struct Definition<'hir: 'a, 'a> {
   pub function: Option<&'a Function<'hir>>,
   pub user_type: Option<UserType<'hir, 'a>>,
-  pub constant: Option<Constant<'hir, 'a>>,
+  pub constant: Option<Static<'hir, 'a>>,
   pub binding: Option<Binding<'hir, 'a>>,
   pub mod_: Option<Rc<Definitions<'hir, 'a>>>,
 }
@@ -104,9 +111,9 @@ pub enum UserType<'hir: 'a, 'a> {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum Constant<'hir: 'a, 'a> {
-  Named(&'a NamedConst<'hir>),
-  GenericPAram,
+pub enum Static<'hir: 'a, 'a> {
+  Named(&'a toyc_hir::Static<'hir>),
+  GenericParam,
 }
 
 #[derive(Copy, Clone, Debug)]

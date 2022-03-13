@@ -1,6 +1,6 @@
 use crate::{
   AnonConst, Body, BodyId, Expr, FieldDef, GenericParam, HirId, Item, Literal,
-  NamedConst, Node, Package, Param, StructDef, TraitItem, Type,
+  Node, Package, Param, Static, StructDef, TraitItem, Type,
 };
 use std::collections::HashMap;
 
@@ -50,8 +50,8 @@ impl<'hir> HirContext<'hir> {
     self.arena.exprs.iter()
   }
 
-  pub fn constants(&self) -> impl Iterator<Item = &NamedConst<'hir>> + '_ {
-    self.arena.consts.iter()
+  pub fn statics(&self) -> impl Iterator<Item = &Static<'hir>> + '_ {
+    self.arena.statics.iter()
   }
 
   pub fn get_body(&self, body_id: BodyId<'_>) -> Body<'hir> {
@@ -86,7 +86,7 @@ toyc_arena::declare_arena! {
       pub field_defs: FieldDef<'hir>,
       pub types: Type<'hir>,
       pub exprs: Expr<'hir>,
-      pub consts: NamedConst<'hir>,
+      pub statics: Static<'hir>,
     }
     dropless {
       GenericParam<'hir> AnonConst<'hir> Literal<'hir> StructDef<'hir>

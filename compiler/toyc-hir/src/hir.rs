@@ -12,7 +12,7 @@ pub enum Node<'hir> {
   GenericParam(&'hir GenericParam<'hir>),
   Type(&'hir Type<'hir>),
   Expr(&'hir Expr<'hir>),
-  NamedConst(&'hir NamedConst<'hir>),
+  Static(&'hir Static<'hir>),
 }
 
 impl<'hir> Node<'hir> {
@@ -23,7 +23,7 @@ impl<'hir> Node<'hir> {
       Node::GenericParam(param) => param.id,
       Node::Type(type_) => type_.id,
       Node::Expr(expr) => expr.id,
-      Node::NamedConst(const_) => const_.id,
+      Node::Static(static_) => static_.id,
     }
   }
 
@@ -34,7 +34,7 @@ impl<'hir> Node<'hir> {
       Node::GenericParam(param) => param.span,
       Node::Type(type_) => type_.span,
       Node::Expr(expr) => expr.span,
-      Node::NamedConst(const_) => const_.span,
+      Node::Static(static_) => static_.span,
     }
   }
 }
@@ -50,7 +50,7 @@ macro_rules! to_node {
 }
 
 to_node! {
-  Item FieldDef GenericParam Type Expr NamedConst
+  Item FieldDef GenericParam Type Expr Static
 }
 
 #[derive(Debug)]
@@ -67,6 +67,7 @@ pub enum Item<'hir> {
   Struct(StructDef<'hir>),
   Trait(Trait<'hir>),
   TypeAlias(TypeAlias<'hir>),
+  Static(Static<'hir>),
 }
 
 impl<'hir> Item<'hir> {
@@ -78,6 +79,7 @@ impl<'hir> Item<'hir> {
       Item::Struct(struct_) => struct_.id,
       Item::Trait(trait_) => trait_.id,
       Item::TypeAlias(type_alias) => type_alias.id,
+      Item::Static(static_) => static_.id,
     }
   }
 
@@ -89,6 +91,7 @@ impl<'hir> Item<'hir> {
       Item::Struct(struct_) => struct_.span,
       Item::Trait(trait_) => trait_.span,
       Item::TypeAlias(type_alias) => type_alias.span,
+      Item::Static(type_alias) => type_alias.span,
     }
   }
 }
@@ -296,8 +299,6 @@ pub enum TypeKind<'hir> {
   Fn(FnType<'hir>),
   Never,
   Tuple(&'hir [Type<'hir>]),
-  Enum(&'hir EnumDef<'hir>),
-  Struct(&'hir StructDef<'hir>),
   Infer,
   Err,
 }
@@ -468,11 +469,12 @@ pub enum UnOp {
 }
 
 #[derive(Debug)]
-pub struct NamedConst<'hir> {
+pub struct Static<'hir> {
   pub id: HirId<'hir>,
   pub ident: Ident,
   pub value: AnonConst<'hir>,
   pub span: Span,
+  pub is_const: bool,
 }
 
 #[derive(Debug)]
