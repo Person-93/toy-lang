@@ -1,3 +1,4 @@
+pub use self::fingerprinted::Fingerprinted;
 use core::{
   hash::{Hash, Hasher},
   marker::PhantomData,
@@ -5,6 +6,8 @@ use core::{
 };
 use serde::{Deserialize, Serialize};
 use xxhash_rust::xxh64::Xxh64;
+
+mod fingerprinted;
 
 pub trait CanBeFingerprinted {
   fn fingerprint(&self, fingerprinter: &mut Fingerprinter);
