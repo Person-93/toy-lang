@@ -82,7 +82,7 @@ fn check_function(
     let definitions = {
       let mut definitions = Rc::new(Definitions {
         defs: Default::default(),
-        parent_scope: Some(definitions),
+        parent_scope: Rc::downgrade(&definitions),
       });
       {
         let definitions = Rc::get_mut(&mut definitions).unwrap();
@@ -247,7 +247,7 @@ fn check_generic_params<'hir: 'a, 'a>(
 ) -> Rc<Definitions<'hir, 'a>> {
   let mut definitions = Rc::new(Definitions {
     defs: Default::default(),
-    parent_scope: Some(definitions),
+    parent_scope: Rc::downgrade(&definitions),
   });
   {
     let definitions = Rc::get_mut(&mut definitions).unwrap();
@@ -293,7 +293,7 @@ impl<'hir: 'a, 'a> Definitions<'hir, 'a> {
     match self.defs.get(&ident).and_then(|def| def.mod_.clone()) {
       Some(def) => Some(def),
       None => {
-        if let Some(parent) = &self.parent_scope {
+        if let Some(parent) = self.parent_scope.upgrade() {
           parent.lookup_mod(ident)
         } else {
           None

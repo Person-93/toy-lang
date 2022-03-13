@@ -1,4 +1,4 @@
-use alloc::rc::Rc;
+use alloc::rc::{Rc, Weak};
 use hashbrown::HashMap;
 use toyc_hir::{
   EnumDef, Expr, Function, HirContext, Item, NamedConst, StructDef, Trait,
@@ -9,17 +9,17 @@ use toyc_span::symbol::Ident;
 #[derive(Clone, Debug)]
 pub struct Definitions<'hir: 'a, 'a> {
   pub(crate) defs: HashMap<Ident, Definition<'hir, 'a>>,
-  pub(crate) parent_scope: Option<Rc<Definitions<'hir, 'a>>>,
+  pub(crate) parent_scope: Weak<Definitions<'hir, 'a>>,
 }
 
 impl<'hir: 'a, 'a> Definitions<'hir, 'a> {
   pub fn new(context: &'a HirContext<'hir>) -> Rc<Self> {
-    Definitions::from_items(context.root().items, None)
+    Definitions::from_items(context.root().items, Weak::new())
   }
 
   fn from_items(
     items: &'hir [Item<'hir>],
-    parent_scope: Option<Rc<Definitions<'hir, 'a>>>,
+    parent_scope: Weak<Definitions<'hir, 'a>>,
   ) -> Rc<Self> {
     let mut definitions = Rc::new(Definitions {
       defs: Default::default(),
@@ -36,7 +36,7 @@ impl<'hir: 'a, 'a> Definitions<'hir, 'a> {
             .or_default()
             .mod_ = Some(Definitions::from_items(
             mod_.items,
-            Some(definitions.clone()),
+            Rc::downgrade(&definitions),
           ))
         }
         Item::Function(function) => {
