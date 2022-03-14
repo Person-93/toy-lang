@@ -57,6 +57,7 @@ impl<'hir> LoweringContext<'hir> {
       id: self.next_id(),
       ident: static_.ident,
       vis: convert_visibility(vis),
+      type_: self.arena.alloc(self.lower_type(&static_.type_)),
       value: AnonConst {
         body: {
           let expr = self.arena.alloc(self.lower_expr(&static_.expr));

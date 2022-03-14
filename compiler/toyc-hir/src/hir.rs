@@ -297,7 +297,6 @@ pub enum TypeKind<'hir> {
   Ptr(MutType<'hir>),
   Ref(MutType<'hir>),
   Fn(FnType<'hir>),
-  Never,
   Tuple(&'hir [Type<'hir>]),
   Infer,
   Err,
@@ -354,7 +353,7 @@ pub enum ArrayLen<'hir> {
   Infer(Span),
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum PrimitiveType {
   Int(IntBits),
   Uint(IntBits),
@@ -362,9 +361,11 @@ pub enum PrimitiveType {
   Str,
   Bool,
   Char,
+  Unit,
+  Never,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum IntBits {
   Eight,
   Sixteen,
@@ -374,7 +375,7 @@ pub enum IntBits {
   Size,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum FloatBits {
   ThirtyTwo,
   SixtyFour,
@@ -473,6 +474,7 @@ pub struct Static<'hir> {
   pub id: HirId<'hir>,
   pub ident: Ident,
   pub vis: Visibility,
+  pub type_: &'hir Type<'hir>,
   pub value: AnonConst<'hir>,
   pub span: Span,
   pub constness: Constness,

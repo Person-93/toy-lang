@@ -336,7 +336,6 @@ impl<'hir: 'a, 'a> Definitions<'hir, 'a> {
           FnRetTy::Explicit(ty) => self.type_exists(ty),
         }
       }
-      TypeKind::Never => Ok(()),
       TypeKind::Tuple(members) => {
         for member in *members {
           self.type_exists(member)?;

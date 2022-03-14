@@ -521,6 +521,8 @@ impl<W: Write> Printer<'_, '_, W> {
       TypeKind::Primitive(PrimitiveType::Str) => write!(self.writer, "str")?,
       TypeKind::Primitive(PrimitiveType::Bool) => write!(self.writer, "bool")?,
       TypeKind::Primitive(PrimitiveType::Char) => write!(self.writer, "char")?,
+      TypeKind::Primitive(PrimitiveType::Unit) => write!(self.writer, "()")?,
+      TypeKind::Primitive(PrimitiveType::Never) => write!(self.writer, "!")?,
       TypeKind::Path(ident) => write!(self.writer, "{ident}")?,
       TypeKind::Slice(inner) => {
         write!(self.writer, "[")?;
@@ -583,7 +585,6 @@ impl<W: Write> Printer<'_, '_, W> {
           FnRetTy::Explicit(ty) => self.print_type(ty, indentation + 1)?,
         }
       }
-      TypeKind::Never => write!(self.writer, "!")?,
       TypeKind::Tuple(members) => {
         let mut members = members.iter();
 
